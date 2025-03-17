@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Theme } from '@/types';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner'; // Import directly from sonner package instead of our UI component
 
 interface MessageContextProps {
   messages: Message[];
