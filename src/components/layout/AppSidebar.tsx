@@ -9,23 +9,14 @@ import {
   SidebarMenuButton,
   SidebarFooter
 } from "@/components/ui/sidebar";
-import { Theme } from "@/types";
 import { useMessages } from "@/context/MessageContext";
-import { Briefcase, Heart, User, Building, Plus } from "lucide-react";
+import { Building, Plus } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const themes: { label: Theme; icon: React.ElementType }[] = [
-  { label: 'Trabalho', icon: Briefcase },
-  { label: 'Saúde', icon: Heart },
-  { label: 'Pessoal', icon: User }
-];
-
 export function AppSidebar() {
   const { 
-    activeTheme, 
-    setActiveTheme, 
     companies, 
     activeCompany,
     createCompany,
@@ -97,27 +88,6 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             )}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarGroup className="mt-6">
-          <h2 className="px-4 py-2 text-xs font-medium text-muted-foreground">Temas</h2>
-          <SidebarMenu>
-            {themes.map((theme) => (
-              <SidebarMenuItem key={theme.label}>
-                <SidebarMenuButton 
-                  onClick={() => setActiveTheme(theme.label)}
-                  className={`${
-                    activeTheme === theme.label 
-                      ? 'bg-primary/20 text-primary-foreground' 
-                      : 'hover:bg-secondary'
-                  } transition-all duration-200`}
-                >
-                  <theme.icon className="w-5 h-5 mr-2" />
-                  <span>{theme.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>

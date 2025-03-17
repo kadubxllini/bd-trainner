@@ -10,3 +10,5 @@ export interface Company {
   name: string;
   messages: Message[];
 }
+
+export type Theme = 'Trabalho' | 'Saúde' | 'Pessoal';
