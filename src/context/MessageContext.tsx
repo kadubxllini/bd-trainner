@@ -1,16 +1,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Message, Theme, Company } from '@/types';
-import { toast } from 'sonner'; // Import directly from sonner package instead of our UI component
+import { Message, Company } from '@/types';
+import { toast } from 'sonner';
 
 interface MessageContextProps {
   messages: Message[];
   companies: Company[];
   activeCompany: Company | null;
-  activeTheme: Theme;
-  setActiveTheme: (theme: Theme) => void;
-  addMessage: (content: string, isTask: boolean) => void;
-  toggleTaskStatus: (id: string) => void;
+  addMessage: (content: string) => void;
   deleteMessage: (id: string) => void;
   createCompany: (name: string) => void;
   selectCompany: (id: string) => void;
@@ -32,7 +29,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [messages, setMessages] = useState<Message[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
-  const [activeTheme, setActiveTheme] = useState<Theme>('Trabalho');
 
   // Load data from localStorage on initialization
   useEffect(() => {
@@ -140,16 +136,13 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     toast.success('Empresa removida');
   };
 
-  const addMessage = (content: string, isTask: boolean) => {
+  const addMessage = (content: string) => {
     if (!content.trim() || !activeCompany) return;
     
     const newMessage: Message = {
       id: Date.now().toString(),
       content,
-      timestamp: Date.now(),
-      theme: activeTheme,
-      isTask,
-      isCompleted: false,
+      timestamp: Date.now()
     };
     
     // Add to general messages list
@@ -173,40 +166,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       };
     });
     
-    toast.success(isTask ? 'Tarefa criada' : 'Mensagem enviada');
-  };
-
-  const toggleTaskStatus = (id: string) => {
-    // Update general messages
-    setMessages(prev =>
-      prev.map(msg =>
-        msg.id === id && msg.isTask ? { ...msg, isCompleted: !msg.isCompleted } : msg
-      )
-    );
-    
-    // Update company messages
-    if (activeCompany) {
-      setCompanies(prev => 
-        prev.map(company => {
-          if (company.id === activeCompany.id) {
-            const updatedMessages = company.messages.map(msg =>
-              msg.id === id && msg.isTask ? { ...msg, isCompleted: !msg.isCompleted } : msg
-            );
-            return { ...company, messages: updatedMessages };
-          }
-          return company;
-        })
-      );
-      
-      // Update active company
-      setActiveCompany(prev => {
-        if (!prev) return prev;
-        const updatedMessages = prev.messages.map(msg =>
-          msg.id === id && msg.isTask ? { ...msg, isCompleted: !msg.isCompleted } : msg
-        );
-        return { ...prev, messages: updatedMessages };
-      });
-    }
+    toast.success('Mensagem enviada');
   };
 
   const deleteMessage = (id: string) => {
@@ -237,7 +197,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       });
     }
     
-    toast.success('Item removido');
+    toast.success('Mensagem removida');
   };
 
   return (
@@ -246,10 +206,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         messages,
         companies,
         activeCompany,
-        activeTheme,
-        setActiveTheme,
         addMessage,
-        toggleTaskStatus,
         deleteMessage,
         createCompany,
         selectCompany,

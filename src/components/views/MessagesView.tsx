@@ -3,27 +3,25 @@ import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { formatRelative } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, Plus } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const MessagesView = () => {
-  const { activeCompany, activeTheme, addMessage } = useMessages();
+  const { activeCompany, addMessage, deleteMessage } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const filteredMessages = activeCompany?.messages.filter(
-    msg => msg.theme === activeTheme && !msg.isTask
-  ) || [];
+  const companyMessages = activeCompany?.messages || [];
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [filteredMessages]);
+  }, [companyMessages]);
 
   const handleSendMessage = () => {
     if (newMessage.trim() && activeCompany) {
-      addMessage(newMessage, false);
+      addMessage(newMessage);
       setNewMessage('');
     }
   };
@@ -45,7 +43,7 @@ const MessagesView = () => {
     <div className="flex flex-col h-full glass-morphism rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-white/10 flex items-center">
         <h2 className="text-lg font-medium">
-          {activeCompany ? `${activeCompany.name} - ${activeTheme}` : 'Selecione uma empresa'}
+          {activeCompany ? activeCompany.name : 'Selecione uma empresa'}
         </h2>
       </div>
       
@@ -56,22 +54,30 @@ const MessagesView = () => {
               Selecione uma empresa para visualizar mensagens.
             </p>
           </div>
-        ) : filteredMessages.length === 0 ? (
+        ) : companyMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground text-center">
-              Nenhuma mensagem no tema {activeTheme} ainda.<br />
+              Nenhuma mensagem ainda.<br />
               Envie sua primeira mensagem!
             </p>
           </div>
         ) : (
-          filteredMessages.map((message) => (
-            <div key={message.id} className="animate-slide-up">
+          companyMessages.map((message) => (
+            <div key={message.id} className="animate-slide-up relative">
               <div className="message-bubble message-bubble-sent">
                 <p>{message.content}</p>
                 <div className="text-xs text-muted-foreground mt-1 text-right">
                   {formatMessageTime(message.timestamp)}
                 </div>
               </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => deleteMessage(message.id)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           ))
         )}
@@ -81,15 +87,6 @@ const MessagesView = () => {
       <div className="p-4 border-t border-white/10">
         {activeCompany && (
           <div className="flex gap-2">
-            <Button 
-              size="icon" 
-              variant="outline" 
-              onClick={() => activeCompany && addMessage(newMessage, true)} 
-              className="glass-morphism border-white/10 hover:bg-white/10"
-              disabled={!activeCompany}
-            >
-              <Plus className="w-4 h-4" />
-            </Button>
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
