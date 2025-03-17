@@ -3,3 +3,52 @@
   width: 100%;
   min-height: 100vh;
 }
+
+/* Estilos para as bolhas de mensagem */
+.message-bubble {
+  position: relative;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  max-width: 85%;
+  width: fit-content;
+  margin-left: auto;
+  word-wrap: break-word;
+}
+
+.message-bubble-sent {
+  background-color: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Adaptações para dispositivos móveis */
+@media (max-width: 640px) {
+  .message-bubble {
+    max-width: 90%;
+  }
+  
+  .glass-morphism {
+    border-radius: 1rem !important;
+  }
+}
+
+/* Animações da página */
+.page-transition {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Efeito de vidro */
+.glass-morphism {
+  background: hsla(var(--card) / 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(var(--border) / 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}

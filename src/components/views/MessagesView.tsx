@@ -17,11 +17,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Message } from '@/types';
 import { toast } from 'sonner';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const MessagesView = () => {
   const { activeCompany, addMessage, deleteMessage, updateMessage } = useMessages();
@@ -31,6 +31,7 @@ const MessagesView = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
   
   const companyMessages = activeCompany?.messages || [];
 
@@ -103,6 +104,11 @@ const MessagesView = () => {
       setEditingMessage(null);
       setEditedContent('');
     }
+  };
+
+  const closeEditDialog = () => {
+    setEditingMessage(null);
+    setEditedContent('');
   };
 
   return (
@@ -229,9 +235,11 @@ const MessagesView = () => {
         )}
       </div>
 
-      {/* Edit Message Dialog */}
-      <Dialog open={!!editingMessage} onOpenChange={(open) => !open && setEditingMessage(null)}>
-        <DialogContent>
+      {/* Edit Message Dialog - Melhorado para evitar problemas de clique */}
+      <Dialog open={!!editingMessage} onOpenChange={(open) => {
+        if (!open) closeEditDialog();
+      }}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar mensagem</DialogTitle>
           </DialogHeader>
@@ -244,7 +252,7 @@ const MessagesView = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setEditingMessage(null)}>
+            <Button variant="secondary" onClick={closeEditDialog}>
               Cancelar
             </Button>
             <Button onClick={saveEditedMessage}>

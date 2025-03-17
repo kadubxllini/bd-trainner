@@ -7,7 +7,8 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter
+  SidebarFooter,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/context/MessageContext";
 import { Building, Plus, Pencil, Trash } from "lucide-react";
@@ -27,6 +28,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Company } from "@/types";
 
 export function AppSidebar() {
@@ -43,6 +45,7 @@ export function AppSidebar() {
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editedCompanyName, setEditedCompanyName] = useState('');
+  const isMobile = useIsMobile();
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -65,14 +68,20 @@ export function AppSidebar() {
     }
   };
 
+  const closeEditDialog = () => {
+    setEditingCompany(null);
+    setEditedCompanyName('');
+  };
+
   const handleDeleteCompany = (companyId: string) => {
     deleteCompany(companyId);
   };
 
   return (
     <Sidebar>
-      <SidebarHeader className="py-6">
-        <h1 className="text-lg font-semibold text-center">Mensageiro</h1>
+      <SidebarHeader className="py-6 flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-center flex-1">Mensageiro</h1>
+        {isMobile && <SidebarTrigger className="md:hidden" />}
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -91,7 +100,7 @@ export function AppSidebar() {
                       } transition-all duration-200`}
                     >
                       <Building className="w-5 h-5 mr-2" />
-                      <span>{company.name}</span>
+                      <span className="truncate">{company.name}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </ContextMenuTrigger>
@@ -148,9 +157,14 @@ export function AppSidebar() {
         Versão 1.0
       </SidebarFooter>
 
-      {/* Edit Company Dialog */}
-      <Dialog open={!!editingCompany} onOpenChange={(open) => !open && setEditingCompany(null)}>
-        <DialogContent>
+      {/* Edit Company Dialog - Melhorado para evitar problemas de clique */}
+      <Dialog 
+        open={!!editingCompany} 
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
@@ -163,7 +177,7 @@ export function AppSidebar() {
             />
           </div>
           <DialogFooter>
-            <Button variant="secondary" onClick={() => setEditingCompany(null)}>
+            <Button variant="secondary" onClick={closeEditDialog}>
               Cancelar
             </Button>
             <Button onClick={saveEditedCompany}>
