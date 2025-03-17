@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 const MessagesView = () => {
-  const { messages, activeTheme, addMessage } = useMessages();
+  const { activeCompany, activeTheme, addMessage } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const filteredMessages = messages.filter(
+  
+  const filteredMessages = activeCompany?.messages.filter(
     msg => msg.theme === activeTheme && !msg.isTask
-  );
+  ) || [];
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -21,7 +22,7 @@ const MessagesView = () => {
   }, [filteredMessages]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && activeCompany) {
       addMessage(newMessage, false);
       setNewMessage('');
     }
@@ -43,11 +44,19 @@ const MessagesView = () => {
   return (
     <div className="flex flex-col h-full glass-morphism rounded-2xl overflow-hidden">
       <div className="p-4 border-b border-white/10 flex items-center">
-        <h2 className="text-lg font-medium">{activeTheme}</h2>
+        <h2 className="text-lg font-medium">
+          {activeCompany ? `${activeCompany.name} - ${activeTheme}` : 'Selecione uma empresa'}
+        </h2>
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {filteredMessages.length === 0 ? (
+        {!activeCompany ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground text-center">
+              Selecione uma empresa para visualizar mensagens.
+            </p>
+          </div>
+        ) : filteredMessages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground text-center">
               Nenhuma mensagem no tema {activeTheme} ainda.<br />
@@ -70,30 +79,35 @@ const MessagesView = () => {
       </div>
       
       <div className="p-4 border-t border-white/10">
-        <div className="flex gap-2">
-          <Button 
-            size="icon" 
-            variant="outline" 
-            onClick={() => addMessage(newMessage, true)} 
-            className="glass-morphism border-white/10 hover:bg-white/10"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-          <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Digite uma mensagem..."
-            className="bg-secondary/50 border-white/10 focus-visible:ring-primary/50"
-          />
-          <Button 
-            size="icon" 
-            onClick={handleSendMessage}
-            className="bg-primary/80 hover:bg-primary"
-          >
-            <Send className="w-4 h-4" />
-          </Button>
-        </div>
+        {activeCompany && (
+          <div className="flex gap-2">
+            <Button 
+              size="icon" 
+              variant="outline" 
+              onClick={() => activeCompany && addMessage(newMessage, true)} 
+              className="glass-morphism border-white/10 hover:bg-white/10"
+              disabled={!activeCompany}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Digite uma mensagem..."
+              className="bg-secondary/50 border-white/10 focus-visible:ring-primary/50"
+              disabled={!activeCompany}
+            />
+            <Button 
+              size="icon" 
+              onClick={handleSendMessage}
+              className="bg-primary/80 hover:bg-primary"
+              disabled={!activeCompany}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

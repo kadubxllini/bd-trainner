@@ -9,3 +9,9 @@ export interface Message {
   isTask: boolean;
   isCompleted?: boolean;
 }
+
+export interface Company {
+  id: string;
+  name: string;
+  messages: Message[];
+}
