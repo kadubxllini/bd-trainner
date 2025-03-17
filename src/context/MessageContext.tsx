@@ -7,8 +7,9 @@ interface MessageContextProps {
   messages: Message[];
   companies: Company[];
   activeCompany: Company | null;
-  addMessage: (content: string) => void;
+  addMessage: (content: string, fileAttachment?: Message['fileAttachment']) => void;
   deleteMessage: (id: string) => void;
+  updateMessage: (id: string, data: Partial<Message>) => void;
   createCompany: (name: string) => void;
   selectCompany: (id: string) => void;
   updateCompany: (id: string, data: Partial<Company>) => void;
@@ -125,6 +126,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteCompany = (id: string) => {
+    // Prevent deleting the last company
+    if (companies.length <= 1) {
+      toast.error('Não é possível excluir a única empresa');
+      return;
+    }
+    
     setCompanies(prev => prev.filter(company => company.id !== id));
     
     // Reset active company if it's being deleted
@@ -136,13 +143,14 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     toast.success('Empresa removida');
   };
 
-  const addMessage = (content: string) => {
-    if (!content.trim() || !activeCompany) return;
+  const addMessage = (content: string, fileAttachment?: Message['fileAttachment']) => {
+    if ((!content.trim() && !fileAttachment) || !activeCompany) return;
     
     const newMessage: Message = {
       id: Date.now().toString(),
-      content,
-      timestamp: Date.now()
+      content: content.trim() || (fileAttachment ? '📎 Arquivo anexado' : ''),
+      timestamp: Date.now(),
+      fileAttachment
     };
     
     // Add to general messages list
@@ -167,6 +175,45 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
     
     toast.success('Mensagem enviada');
+  };
+
+  const updateMessage = (id: string, data: Partial<Message>) => {
+    // Update in general messages
+    setMessages(prev => 
+      prev.map(msg => 
+        msg.id === id ? { ...msg, ...data } : msg
+      )
+    );
+    
+    // Update in company messages
+    if (activeCompany) {
+      setCompanies(prev => 
+        prev.map(company => {
+          if (company.id === activeCompany.id) {
+            return { 
+              ...company, 
+              messages: company.messages.map(msg => 
+                msg.id === id ? { ...msg, ...data } : msg
+              )
+            };
+          }
+          return company;
+        })
+      );
+      
+      // Update active company
+      setActiveCompany(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map(msg => 
+            msg.id === id ? { ...msg, ...data } : msg
+          )
+        };
+      });
+    }
+    
+    toast.success('Mensagem atualizada');
   };
 
   const deleteMessage = (id: string) => {
@@ -208,6 +255,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activeCompany,
         addMessage,
         deleteMessage,
+        updateMessage,
         createCompany,
         selectCompany,
         updateCompany,
