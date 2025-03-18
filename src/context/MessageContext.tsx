@@ -2,18 +2,22 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company } from '@/types';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from './AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface MessageContextProps {
   messages: Message[];
   companies: Company[];
   activeCompany: Company | null;
-  addMessage: (content: string, fileAttachment?: Message['fileAttachment']) => void;
-  deleteMessage: (id: string) => void;
-  updateMessage: (id: string, data: Partial<Message>) => void;
-  createCompany: (name: string) => void;
+  addMessage: (content: string, fileAttachment?: Message['fileAttachment']) => Promise<void>;
+  deleteMessage: (id: string) => Promise<void>;
+  updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
+  createCompany: (name: string) => Promise<void>;
   selectCompany: (id: string) => void;
-  updateCompany: (id: string, data: Partial<Company>) => void;
-  deleteCompany: (id: string) => void;
+  updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
+  deleteCompany: (id: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
@@ -27,79 +31,226 @@ export const useMessages = () => {
 };
 
 export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
-
-  // Load data from localStorage on initialization
-  useEffect(() => {
-    const storedMessages = localStorage.getItem('messages');
-    const storedCompanies = localStorage.getItem('companies');
-    const storedActiveCompanyId = localStorage.getItem('activeCompanyId');
-    
-    if (storedMessages) {
-      try {
-        setMessages(JSON.parse(storedMessages));
-      } catch (error) {
-        console.error('Failed to parse stored messages:', error);
-        toast.error('Não foi possível carregar as mensagens salvas');
+  
+  // Fetch companies
+  const { 
+    data: companies = [], 
+    isLoading: isLoadingCompanies 
+  } = useQuery({
+    queryKey: ['companies', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        toast.error(`Erro ao carregar empresas: ${error.message}`);
+        throw error;
       }
-    }
-    
-    if (storedCompanies) {
-      try {
-        const parsedCompanies = JSON.parse(storedCompanies);
-        setCompanies(parsedCompanies);
-        
-        // Set active company if stored
-        if (storedActiveCompanyId) {
-          const company = parsedCompanies.find((c: Company) => c.id === storedActiveCompanyId);
-          if (company) {
-            setActiveCompany(company);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to parse stored companies:', error);
-        toast.error('Não foi possível carregar as empresas salvas');
-      }
-    } else {
-      // Create a default company if none exists
-      const defaultCompany: Company = {
-        id: 'teste',
-        name: 'Teste',
+      
+      return data.map(company => ({
+        id: company.id,
+        name: company.name,
         messages: []
-      };
-      setCompanies([defaultCompany]);
-      setActiveCompany(defaultCompany);
-      localStorage.setItem('companies', JSON.stringify([defaultCompany]));
-      localStorage.setItem('activeCompanyId', defaultCompany.id);
-    }
-  }, []);
-
-  // Save data to localStorage whenever they change
+      }));
+    },
+    enabled: !!user
+  });
+  
+  // Fetch messages for active company
+  const { 
+    data: messages = [],
+    isLoading: isLoadingMessages
+  } = useQuery({
+    queryKey: ['messages', activeCompany?.id],
+    queryFn: async () => {
+      if (!user || !activeCompany) return [];
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('company_id', activeCompany.id)
+        .order('timestamp', { ascending: true });
+      
+      if (error) {
+        toast.error(`Erro ao carregar mensagens: ${error.message}`);
+        throw error;
+      }
+      
+      return data.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp).getTime(),
+        fileAttachment: msg.file_url ? {
+          name: msg.file_name || 'Arquivo',
+          url: msg.file_url,
+          type: msg.file_type || 'application/octet-stream'
+        } : undefined
+      }));
+    },
+    enabled: !!user && !!activeCompany
+  });
+  
+  // Set default active company when companies load
   useEffect(() => {
-    localStorage.setItem('messages', JSON.stringify(messages));
-  }, [messages]);
-
-  useEffect(() => {
-    localStorage.setItem('companies', JSON.stringify(companies));
-    if (activeCompany) {
-      localStorage.setItem('activeCompanyId', activeCompany.id);
+    if (!activeCompany && companies.length > 0) {
+      setActiveCompany(companies[0]);
     }
   }, [companies, activeCompany]);
+  
+  // Create company mutation
+  const createCompanyMutation = useMutation({
+    mutationFn: async (name: string) => {
+      if (!user) throw new Error("Usuário não autenticado");
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .insert({ name, user_id: user.id })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success(`Empresa ${data.name} criada`);
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao criar empresa: ${error.message}`);
+    }
+  });
+  
+  // Update company mutation
+  const updateCompanyMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<Company> }) => {
+      const { error } = await supabase
+        .from('companies')
+        .update({ name: data.name })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Empresa atualizada');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao atualizar empresa: ${error.message}`);
+    }
+  });
+  
+  // Delete company mutation
+  const deleteCompanyMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Empresa removida');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover empresa: ${error.message}`);
+    }
+  });
+  
+  // Add message mutation
+  const addMessageMutation = useMutation({
+    mutationFn: async ({ 
+      content, 
+      fileAttachment 
+    }: { 
+      content: string, 
+      fileAttachment?: Message['fileAttachment'] 
+    }) => {
+      if (!user || !activeCompany) throw new Error("Empresa não selecionada");
+      
+      let fileData = null;
+      
+      if (fileAttachment) {
+        const fileName = fileAttachment.name;
+        const fileUrl = fileAttachment.url;
+        const fileType = fileAttachment.type;
+        
+        fileData = { file_name: fileName, file_url: fileUrl, file_type: fileType };
+      }
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          content: content.trim() || (fileAttachment ? '📎 Arquivo anexado' : ''),
+          company_id: activeCompany.id,
+          user_id: user.id,
+          ...fileData
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
+      toast.success('Mensagem enviada');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao enviar mensagem: ${error.message}`);
+    }
+  });
+  
+  // Update message mutation
+  const updateMessageMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<Message> }) => {
+      const { error } = await supabase
+        .from('messages')
+        .update({ content: data.content })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
+      toast.success('Mensagem atualizada');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao atualizar mensagem: ${error.message}`);
+    }
+  });
+  
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
+      toast.success('Mensagem removida');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover mensagem: ${error.message}`);
+    }
+  });
 
-  const createCompany = (name: string) => {
+  // Function wrappers
+  const createCompany = async (name: string) => {
     if (!name.trim()) return;
-    
-    const newCompany: Company = {
-      id: Date.now().toString(),
-      name,
-      messages: []
-    };
-    
-    setCompanies(prev => [...prev, newCompany]);
-    setActiveCompany(newCompany);
-    toast.success(`Empresa ${name} criada`);
+    await createCompanyMutation.mutateAsync(name);
   };
 
   const selectCompany = (id: string) => {
@@ -110,141 +261,42 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateCompany = (id: string, data: Partial<Company>) => {
-    setCompanies(prev => 
-      prev.map(company => 
-        company.id === id ? { ...company, ...data } : company
-      )
-    );
+  const updateCompany = async (id: string, data: Partial<Company>) => {
+    await updateCompanyMutation.mutateAsync({ id, data });
     
     // Update active company if it's the one being updated
     if (activeCompany && activeCompany.id === id) {
       setActiveCompany(prev => prev ? { ...prev, ...data } : prev);
     }
-    
-    toast.success('Empresa atualizada');
   };
 
-  const deleteCompany = (id: string) => {
+  const deleteCompany = async (id: string) => {
     // Prevent deleting the last company
     if (companies.length <= 1) {
       toast.error('Não é possível excluir a única empresa');
       return;
     }
     
-    setCompanies(prev => prev.filter(company => company.id !== id));
+    await deleteCompanyMutation.mutateAsync(id);
     
     // Reset active company if it's being deleted
     if (activeCompany && activeCompany.id === id) {
       const nextCompany = companies.find(c => c.id !== id);
       setActiveCompany(nextCompany || null);
     }
-    
-    toast.success('Empresa removida');
   };
 
-  const addMessage = (content: string, fileAttachment?: Message['fileAttachment']) => {
+  const addMessage = async (content: string, fileAttachment?: Message['fileAttachment']) => {
     if ((!content.trim() && !fileAttachment) || !activeCompany) return;
-    
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      content: content.trim() || (fileAttachment ? '📎 Arquivo anexado' : ''),
-      timestamp: Date.now(),
-      fileAttachment
-    };
-    
-    // Add to general messages list
-    setMessages(prev => [...prev, newMessage]);
-    
-    // Add to company messages
-    setCompanies(prev => 
-      prev.map(company => 
-        company.id === activeCompany.id 
-        ? { ...company, messages: [...company.messages, newMessage] } 
-        : company
-      )
-    );
-    
-    // Update active company
-    setActiveCompany(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        messages: [...prev.messages, newMessage]
-      };
-    });
-    
-    toast.success('Mensagem enviada');
+    await addMessageMutation.mutateAsync({ content, fileAttachment });
   };
 
-  const updateMessage = (id: string, data: Partial<Message>) => {
-    // Update in general messages
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === id ? { ...msg, ...data } : msg
-      )
-    );
-    
-    // Update in company messages
-    if (activeCompany) {
-      setCompanies(prev => 
-        prev.map(company => {
-          if (company.id === activeCompany.id) {
-            return { 
-              ...company, 
-              messages: company.messages.map(msg => 
-                msg.id === id ? { ...msg, ...data } : msg
-              )
-            };
-          }
-          return company;
-        })
-      );
-      
-      // Update active company
-      setActiveCompany(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          messages: prev.messages.map(msg => 
-            msg.id === id ? { ...msg, ...data } : msg
-          )
-        };
-      });
-    }
-    
-    toast.success('Mensagem atualizada');
+  const updateMessage = async (id: string, data: Partial<Message>) => {
+    await updateMessageMutation.mutateAsync({ id, data });
   };
 
-  const deleteMessage = (id: string) => {
-    // Remove from general messages
-    setMessages(prev => prev.filter(msg => msg.id !== id));
-    
-    // Remove from company messages
-    if (activeCompany) {
-      setCompanies(prev => 
-        prev.map(company => {
-          if (company.id === activeCompany.id) {
-            return { 
-              ...company, 
-              messages: company.messages.filter(msg => msg.id !== id) 
-            };
-          }
-          return company;
-        })
-      );
-      
-      // Update active company
-      setActiveCompany(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          messages: prev.messages.filter(msg => msg.id !== id)
-        };
-      });
-    }
-    
-    toast.success('Mensagem removida');
+  const deleteMessage = async (id: string) => {
+    await deleteMessageMutation.mutateAsync(id);
   };
 
   return (
@@ -259,7 +311,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         createCompany,
         selectCompany,
         updateCompany,
-        deleteCompany
+        deleteCompany,
+        isLoading: isLoadingCompanies || isLoadingMessages
       }}
     >
       {children}

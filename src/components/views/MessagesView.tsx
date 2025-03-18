@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { formatRelative } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Send, X, Pencil, Trash, Upload, MoreVertical, FileText } from 'lucide-react';
+import { Send, X, Pencil, Trash, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -22,50 +22,66 @@ import {
 import { Message } from '@/types';
 import { toast } from 'sonner';
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 const MessagesView = () => {
-  const { activeCompany, addMessage, deleteMessage, updateMessage } = useMessages();
+  const { user } = useAuth();
+  const { activeCompany, messages, addMessage, deleteMessage, updateMessage, isLoading } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editedContent, setEditedContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
-  
-  const companyMessages = activeCompany?.messages || [];
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [companyMessages]);
+  }, [messages]);
 
-  const handleSendMessage = () => {
-    if ((!newMessage.trim() && !selectedFile) || !activeCompany) return;
+  const handleSendMessage = async () => {
+    if ((!newMessage.trim() && !selectedFile) || !activeCompany || !user) return;
     
-    let fileData = undefined;
-    
-    if (selectedFile) {
-      // In a real application, you would upload to a server/storage
-      // Here we're creating a data URL for demo purposes
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          const fileAttachment = {
-            name: selectedFile.name,
-            url: URL.createObjectURL(selectedFile),
-            type: selectedFile.type
-          };
-          
-          addMessage(newMessage, fileAttachment);
-          setNewMessage('');
-          setSelectedFile(null);
+    try {
+      let fileAttachment = undefined;
+      
+      if (selectedFile) {
+        setIsUploading(true);
+        
+        // Upload file to Supabase Storage
+        const fileName = `${Date.now()}_${selectedFile.name}`;
+        const filePath = `${user.id}/${activeCompany.id}/${fileName}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('messages')
+          .upload(filePath, selectedFile);
+        
+        if (uploadError) {
+          throw uploadError;
         }
-      };
-      reader.readAsDataURL(selectedFile);
-    } else {
-      addMessage(newMessage);
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('messages')
+          .getPublicUrl(filePath);
+        
+        fileAttachment = {
+          name: selectedFile.name,
+          url: publicUrl,
+          type: selectedFile.type
+        };
+      }
+      
+      await addMessage(newMessage, fileAttachment);
       setNewMessage('');
+      setSelectedFile(null);
+    } catch (error: any) {
+      toast.error(`Erro ao enviar mensagem: ${error.message}`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -98,9 +114,9 @@ const MessagesView = () => {
     setEditedContent(message.content);
   };
 
-  const saveEditedMessage = () => {
+  const saveEditedMessage = async () => {
     if (editingMessage && editedContent.trim()) {
-      updateMessage(editingMessage.id, { content: editedContent });
+      await updateMessage(editingMessage.id, { content: editedContent });
       setEditingMessage(null);
       setEditedContent('');
     }
@@ -109,6 +125,10 @@ const MessagesView = () => {
   const closeEditDialog = () => {
     setEditingMessage(null);
     setEditedContent('');
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    await deleteMessage(id);
   };
 
   return (
@@ -120,13 +140,17 @@ const MessagesView = () => {
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {!activeCompany ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-muted-foreground">Carregando mensagens...</p>
+          </div>
+        ) : !activeCompany ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground text-center">
               Selecione uma empresa para visualizar mensagens.
             </p>
           </div>
-        ) : companyMessages.length === 0 ? (
+        ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground text-center">
               Nenhuma mensagem ainda.<br />
@@ -134,7 +158,7 @@ const MessagesView = () => {
             </p>
           </div>
         ) : (
-          companyMessages.map((message) => (
+          messages.map((message) => (
             <ContextMenu key={message.id}>
               <ContextMenuTrigger>
                 <div className="group animate-slide-up relative">
@@ -163,7 +187,7 @@ const MessagesView = () => {
                     size="icon"
                     variant="ghost"
                     className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => deleteMessage(message.id)}
+                    onClick={() => handleDeleteMessage(message.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -175,7 +199,7 @@ const MessagesView = () => {
                   <Pencil className="h-4 w-4 mr-2" />
                   Editar mensagem
                 </ContextMenuItem>
-                <ContextMenuItem onClick={() => deleteMessage(message.id)} className="text-destructive">
+                <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
                   <Trash className="h-4 w-4 mr-2" />
                   Excluir mensagem
                 </ContextMenuItem>
@@ -195,20 +219,21 @@ const MessagesView = () => {
               onKeyDown={handleKeyDown}
               placeholder="Digite uma mensagem..."
               className="bg-secondary/50 border-white/10 focus-visible:ring-primary/50"
-              disabled={!activeCompany}
+              disabled={!activeCompany || isUploading}
             />
             <input 
               type="file" 
               ref={fileInputRef} 
               className="hidden" 
               onChange={handleFileChange}
+              disabled={isUploading}
             />
             <Button
               size="icon"
               variant="outline"
               onClick={handleFileButtonClick}
               className="bg-secondary/50 border-white/10"
-              disabled={!activeCompany}
+              disabled={!activeCompany || isUploading}
             >
               <Upload className="w-4 h-4" />
             </Button>
@@ -216,7 +241,7 @@ const MessagesView = () => {
               size="icon" 
               onClick={handleSendMessage}
               className="bg-primary/80 hover:bg-primary"
-              disabled={!activeCompany}
+              disabled={!activeCompany || isUploading}
             >
               <Send className="w-4 h-4" />
             </Button>
@@ -228,14 +253,19 @@ const MessagesView = () => {
               <FileText className="h-4 w-4" />
               <span className="text-sm truncate max-w-[200px]">{selectedFile.name}</span>
             </div>
-            <Button size="icon" variant="ghost" onClick={() => setSelectedFile(null)}>
+            <Button size="icon" variant="ghost" onClick={() => setSelectedFile(null)} disabled={isUploading}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         )}
+        {isUploading && (
+          <div className="mt-2 text-sm text-center text-muted-foreground">
+            Enviando arquivo...
+          </div>
+        )}
       </div>
 
-      {/* Edit Message Dialog - Melhorado para evitar problemas de clique */}
+      {/* Edit Message Dialog */}
       <Dialog open={!!editingMessage} onOpenChange={(open) => {
         if (!open) closeEditDialog();
       }}>
