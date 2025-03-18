@@ -9,10 +9,11 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/context/MessageContext";
 import { useAuth } from "@/context/AuthContext";
-import { Building, Plus, Pencil, Trash, LogOut } from "lucide-react";
+import { Building, Plus, Pencil, Trash, LogOut, X } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ export function AppSidebar() {
   } = useMessages();
   
   const { user, signOut } = useAuth();
+  const { setOpenMobile } = useSidebar();
   
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
@@ -81,11 +83,27 @@ export function AppSidebar() {
     deleteCompany(companyId);
   };
 
+  const handleCompanySelect = (companyId: string) => {
+    selectCompany(companyId);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="py-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-center flex-1">Mensageiro</h1>
-        {isMobile && <SidebarTrigger className="md:hidden" />}
+        {isMobile && (
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden" 
+            onClick={() => setOpenMobile(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        )}
       </SidebarHeader>
       <SidebarContent>
         {isLoading ? (
@@ -106,7 +124,7 @@ export function AppSidebar() {
                   <ContextMenuTrigger>
                     <SidebarMenuItem>
                       <SidebarMenuButton 
-                        onClick={() => selectCompany(company.id)}
+                        onClick={() => handleCompanySelect(company.id)}
                         className={`${
                           activeCompany?.id === company.id 
                             ? 'bg-primary/20 text-primary-foreground' 
