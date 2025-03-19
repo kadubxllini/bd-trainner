@@ -39,6 +39,93 @@ export type Database = {
         }
         Relationships: []
       }
+      company_contacts: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_contacts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_emails: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_emails_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_phones: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          id: string
+          phone: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          id?: string
+          phone: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          id?: string
+          phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_phones_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           company_id: string

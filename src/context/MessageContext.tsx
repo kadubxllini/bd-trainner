@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Message, Company } from '@/types';
+import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -17,6 +17,12 @@ interface MessageContextProps {
   selectCompany: (id: string) => void;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
+  addCompanyEmail: (companyId: string, email: string) => Promise<void>;
+  deleteCompanyEmail: (emailId: string) => Promise<void>;
+  addCompanyPhone: (companyId: string, phone: string) => Promise<void>;
+  deleteCompanyPhone: (phoneId: string) => Promise<void>;
+  addCompanyContact: (companyId: string, name: string) => Promise<void>;
+  deleteCompanyContact: (contactId: string) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -44,24 +50,69 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
+      const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        toast.error(`Erro ao carregar empresas: ${error.message}`);
-        throw error;
+      if (companiesError) {
+        toast.error(`Erro ao carregar empresas: ${companiesError.message}`);
+        throw companiesError;
       }
       
-      return data.map(company => ({
-        id: company.id,
-        name: company.name,
-        email: company.email || undefined,
-        phone: company.phone || undefined,
-        contactPerson: company.contact_person || undefined,
-        messages: []
-      }));
+      const companiesWithDetails = await Promise.all(
+        companiesData.map(async (company) => {
+          // Fetch emails
+          const { data: emailsData, error: emailsError } = await supabase
+            .from('company_emails')
+            .select('*')
+            .eq('company_id', company.id);
+          
+          if (emailsError) {
+            console.error('Error fetching emails:', emailsError);
+          }
+          
+          // Fetch phones
+          const { data: phonesData, error: phonesError } = await supabase
+            .from('company_phones')
+            .select('*')
+            .eq('company_id', company.id);
+          
+          if (phonesError) {
+            console.error('Error fetching phones:', phonesError);
+          }
+          
+          // Fetch contacts
+          const { data: contactsData, error: contactsError } = await supabase
+            .from('company_contacts')
+            .select('*')
+            .eq('company_id', company.id);
+          
+          if (contactsError) {
+            console.error('Error fetching contacts:', contactsError);
+          }
+          
+          return {
+            id: company.id,
+            name: company.name,
+            emails: emailsData?.map(email => ({
+              id: email.id,
+              email: email.email,
+            })) || [],
+            phones: phonesData?.map(phone => ({
+              id: phone.id,
+              phone: phone.phone,
+            })) || [],
+            contacts: contactsData?.map(contact => ({
+              id: contact.id,
+              name: contact.name,
+            })) || [],
+            messages: []
+          };
+        })
+      );
+      
+      return companiesWithDetails;
     },
     enabled: !!user
   });
@@ -133,16 +184,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Update company mutation
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Company> }) => {
-      const updateData = {
-        name: data.name,
-        email: data.email || null,
-        phone: data.phone || null,
-        contact_person: data.contactPerson || null
-      };
-      
       const { error } = await supabase
         .from('companies')
-        .update(updateData)
+        .update({ name: data.name })
         .eq('id', id);
       
       if (error) throw error;
@@ -172,6 +216,117 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     onError: (error: any) => {
       toast.error(`Erro ao remover empresa: ${error.message}`);
+    }
+  });
+  
+  // Add email mutation
+  const addEmailMutation = useMutation({
+    mutationFn: async ({ companyId, email }: { companyId: string, email: string }) => {
+      const { error } = await supabase
+        .from('company_emails')
+        .insert({ company_id: companyId, email });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Email adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar email: ${error.message}`);
+    }
+  });
+  
+  // Delete email mutation
+  const deleteEmailMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const { error } = await supabase
+        .from('company_emails')
+        .delete()
+        .eq('id', emailId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Email removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover email: ${error.message}`);
+    }
+  });
+  
+  // Add phone mutation
+  const addPhoneMutation = useMutation({
+    mutationFn: async ({ companyId, phone }: { companyId: string, phone: string }) => {
+      const { error } = await supabase
+        .from('company_phones')
+        .insert({ company_id: companyId, phone });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Telefone adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar telefone: ${error.message}`);
+    }
+  });
+  
+  // Delete phone mutation
+  const deletePhoneMutation = useMutation({
+    mutationFn: async (phoneId: string) => {
+      const { error } = await supabase
+        .from('company_phones')
+        .delete()
+        .eq('id', phoneId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Telefone removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover telefone: ${error.message}`);
+    }
+  });
+  
+  // Add contact mutation
+  const addContactMutation = useMutation({
+    mutationFn: async ({ companyId, name }: { companyId: string, name: string }) => {
+      const { error } = await supabase
+        .from('company_contacts')
+        .insert({ company_id: companyId, name });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Contato adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar contato: ${error.message}`);
+    }
+  });
+  
+  // Delete contact mutation
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await supabase
+        .from('company_contacts')
+        .delete()
+        .eq('id', contactId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Contato removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover contato: ${error.message}`);
     }
   });
   
@@ -296,6 +451,33 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const addCompanyEmail = async (companyId: string, email: string) => {
+    if (!email.trim()) return;
+    await addEmailMutation.mutateAsync({ companyId, email });
+  };
+
+  const deleteCompanyEmail = async (emailId: string) => {
+    await deleteEmailMutation.mutateAsync(emailId);
+  };
+
+  const addCompanyPhone = async (companyId: string, phone: string) => {
+    if (!phone.trim()) return;
+    await addPhoneMutation.mutateAsync({ companyId, phone });
+  };
+
+  const deleteCompanyPhone = async (phoneId: string) => {
+    await deletePhoneMutation.mutateAsync(phoneId);
+  };
+
+  const addCompanyContact = async (companyId: string, name: string) => {
+    if (!name.trim()) return;
+    await addContactMutation.mutateAsync({ companyId, name });
+  };
+
+  const deleteCompanyContact = async (contactId: string) => {
+    await deleteContactMutation.mutateAsync(contactId);
+  };
+
   const addMessage = async (content: string, fileAttachment?: Message['fileAttachment']) => {
     if ((!content.trim() && !fileAttachment) || !activeCompany) return;
     await addMessageMutation.mutateAsync({ content, fileAttachment });
@@ -322,6 +504,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         selectCompany,
         updateCompany,
         deleteCompany,
+        addCompanyEmail,
+        deleteCompanyEmail,
+        addCompanyPhone,
+        deleteCompanyPhone,
+        addCompanyContact,
+        deleteCompanyContact,
         isLoading: isLoadingCompanies || isLoadingMessages
       }}
     >

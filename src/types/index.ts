@@ -10,12 +10,27 @@ export interface Message {
   };
 }
 
+export interface CompanyEmail {
+  id: string;
+  email: string;
+}
+
+export interface CompanyPhone {
+  id: string;
+  phone: string;
+}
+
+export interface CompanyContact {
+  id: string;
+  name: string;
+}
+
 export interface Company {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
-  contactPerson?: string;
+  emails: CompanyEmail[];
+  phones: CompanyPhone[];
+  contacts: CompanyContact[];
   messages: Message[];
 }
 

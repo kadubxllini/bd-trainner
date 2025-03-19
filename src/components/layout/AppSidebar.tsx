@@ -31,9 +31,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Company } from "@/types";
+import { Company, CompanyEmail, CompanyPhone, CompanyContact } from "@/types";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function AppSidebar() {
   const { 
@@ -43,6 +44,12 @@ export function AppSidebar() {
     selectCompany,
     updateCompany,
     deleteCompany,
+    addCompanyEmail,
+    deleteCompanyEmail,
+    addCompanyPhone,
+    deleteCompanyPhone,
+    addCompanyContact,
+    deleteCompanyContact,
     isLoading
   } = useMessages();
   
@@ -52,6 +59,9 @@ export function AppSidebar() {
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -60,10 +70,7 @@ export function AppSidebar() {
   // Initialize form
   const form = useForm({
     defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      contactPerson: ''
+      name: ''
     }
   });
 
@@ -72,11 +79,30 @@ export function AppSidebar() {
     if (searchQuery.trim() === '') {
       setFilteredCompanies(companies);
     } else {
-      const filtered = companies.filter(company => 
-        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (company.email && company.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (company.contactPerson && company.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
+      const filtered = companies.filter(company => {
+        // Check if company name matches
+        if (company.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+          return true;
+        }
+        
+        // Check if any email matches
+        if (company.emails.some(e => e.email.toLowerCase().includes(searchQuery.toLowerCase()))) {
+          return true;
+        }
+        
+        // Check if any phone matches
+        if (company.phones.some(p => p.phone.toLowerCase().includes(searchQuery.toLowerCase()))) {
+          return true;
+        }
+        
+        // Check if any contact matches
+        if (company.contacts.some(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
+          return true;
+        }
+        
+        return false;
+      });
+      
       setFilteredCompanies(filtered);
     }
   }, [searchQuery, companies]);
@@ -92,10 +118,7 @@ export function AppSidebar() {
   const startEditingCompany = (company: Company) => {
     setEditingCompany(company);
     form.reset({
-      name: company.name,
-      email: company.email || '',
-      phone: company.phone || '',
-      contactPerson: company.contactPerson || ''
+      name: company.name
     });
   };
 
@@ -105,19 +128,38 @@ export function AppSidebar() {
       
       if (formData.name.trim()) {
         updateCompany(editingCompany.id, { 
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          contactPerson: formData.contactPerson
+          name: formData.name
         });
-        
-        setEditingCompany(null);
       }
+    }
+  };
+
+  const handleAddEmail = () => {
+    if (editingCompany && newEmail.trim()) {
+      addCompanyEmail(editingCompany.id, newEmail);
+      setNewEmail('');
+    }
+  };
+
+  const handleAddPhone = () => {
+    if (editingCompany && newPhone.trim()) {
+      addCompanyPhone(editingCompany.id, newPhone);
+      setNewPhone('');
+    }
+  };
+
+  const handleAddContact = () => {
+    if (editingCompany && newContact.trim()) {
+      addCompanyContact(editingCompany.id, newContact);
+      setNewContact('');
     }
   };
 
   const closeEditDialog = () => {
     setEditingCompany(null);
+    setNewEmail('');
+    setNewPhone('');
+    setNewContact('');
   };
 
   const handleDeleteCompany = (companyId: string) => {
@@ -269,62 +311,152 @@ export function AppSidebar() {
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">Nome da empresa</label>
-              <Input
-                id="name"
-                {...form.register('name')}
-                placeholder="Nome da empresa"
-                className="w-full"
-              />
-            </div>
+          
+          <Tabs defaultValue="info" className="pt-2">
+            <TabsList className="w-full">
+              <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
+              <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
+              <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
+              <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
+            </TabsList>
             
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">E-mail</label>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  {...form.register('email')}
-                  placeholder="E-mail de contato"
-                  className="w-full"
-                  type="email"
-                />
+            <TabsContent value="info" className="pt-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="name" className="text-sm font-medium">Nome da empresa</label>
+                  <Input
+                    id="name"
+                    {...form.register('name')}
+                    placeholder="Nome da empresa"
+                    className="w-full"
+                  />
+                </div>
               </div>
-            </div>
+            </TabsContent>
             
-            <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium">Telefone</label>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
+            <TabsContent value="emails" className="pt-4 space-y-4">
+              <div className="flex gap-2">
                 <Input
-                  id="phone"
-                  {...form.register('phone')}
-                  placeholder="Telefone de contato"
-                  className="w-full"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Novo e-mail"
+                  className="flex-1"
                 />
+                <Button onClick={handleAddEmail} size="sm">Adicionar</Button>
               </div>
-            </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">E-mails cadastrados</h3>
+                {editingCompany?.emails.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {editingCompany?.emails.map(item => (
+                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span>{item.email}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => deleteCompanyEmail(item.id)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
             
-            <div className="space-y-2">
-              <label htmlFor="contactPerson" className="text-sm font-medium">Pessoa de contato</label>
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
+            <TabsContent value="phones" className="pt-4 space-y-4">
+              <div className="flex gap-2">
                 <Input
-                  id="contactPerson"
-                  {...form.register('contactPerson')}
-                  placeholder="Nome da pessoa de contato"
-                  className="w-full"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="Novo telefone"
+                  className="flex-1"
                 />
+                <Button onClick={handleAddPhone} size="sm">Adicionar</Button>
               </div>
-            </div>
-          </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Telefones cadastrados</h3>
+                {editingCompany?.phones.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum telefone cadastrado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {editingCompany?.phones.map(item => (
+                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span>{item.phone}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => deleteCompanyPhone(item.id)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="contacts" className="pt-4 space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  value={newContact}
+                  onChange={(e) => setNewContact(e.target.value)}
+                  placeholder="Novo contato"
+                  className="flex-1"
+                />
+                <Button onClick={handleAddContact} size="sm">Adicionar</Button>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium">Contatos cadastrados</h3>
+                {editingCompany?.contacts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum contato cadastrado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {editingCompany?.contacts.map(item => (
+                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>{item.name}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => deleteCompanyContact(item.id)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+          
           <DialogFooter>
             <Button variant="secondary" onClick={closeEditDialog}>
               Cancelar
             </Button>
-            <Button onClick={saveEditedCompany}>
+            <Button onClick={() => {
+              saveEditedCompany();
+              closeEditDialog();
+            }}>
               Salvar
             </Button>
           </DialogFooter>

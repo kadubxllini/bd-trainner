@@ -1,7 +1,6 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
-import { formatRelative } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { Send, X, Pencil, Trash, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +56,7 @@ const MessagesView = () => {
           .upload(filePath, selectedFile);
         
         if (uploadError) {
+          console.error("Upload error:", uploadError);
           throw uploadError;
         }
         
@@ -69,6 +69,8 @@ const MessagesView = () => {
           url: publicUrl,
           type: selectedFile.type
         };
+        
+        console.log("File uploaded successfully:", publicUrl);
       }
       
       await addMessage(newMessage, fileAttachment);
@@ -76,6 +78,7 @@ const MessagesView = () => {
       setSelectedFile(null);
     } catch (error: any) {
       toast.error(`Erro ao enviar mensagem: ${error.message}`);
+      console.error("Send message error:", error);
     } finally {
       setIsUploading(false);
     }
@@ -86,12 +89,6 @@ const MessagesView = () => {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  const formatMessageTime = (timestamp: number) => {
-    return formatRelative(new Date(timestamp), new Date(), {
-      locale: ptBR,
-    });
   };
 
   const handleFileButtonClick = () => {
@@ -112,9 +109,12 @@ const MessagesView = () => {
 
   const saveEditedMessage = async () => {
     if (editingMessage && editedContent.trim()) {
-      await updateMessage(editingMessage.id, { content: editedContent });
-      setEditingMessage(null);
-      setEditedContent('');
+      try {
+        await updateMessage(editingMessage.id, { content: editedContent });
+        closeEditDialog();
+      } catch (error) {
+        console.error("Error updating message:", error);
+      }
     }
   };
 
@@ -174,10 +174,6 @@ const MessagesView = () => {
                         </a>
                       </div>
                     )}
-                    
-                    <div className="text-xs text-muted-foreground mt-1 text-right">
-                      {formatMessageTime(message.timestamp)}
-                    </div>
                   </div>
                   <Button
                     size="icon"
@@ -261,9 +257,12 @@ const MessagesView = () => {
         )}
       </div>
 
-      <Dialog open={!!editingMessage} onOpenChange={(open) => {
-        if (!open) closeEditDialog();
-      }}>
+      <Dialog 
+        open={!!editingMessage} 
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Editar mensagem</DialogTitle>

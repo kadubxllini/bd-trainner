@@ -31,22 +31,39 @@ const CompanyInfo = () => {
   
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4 text-sm text-muted-foreground">
-      {activeCompany.contactPerson && (
-        <div className="flex items-center gap-1">
-          <User className="h-4 w-4" />
-          <span>{activeCompany.contactPerson}</span>
+      {activeCompany.contacts.length > 0 && (
+        <div className="flex flex-col">
+          <span className="font-medium mb-1">Contatos:</span>
+          {activeCompany.contacts.map(contact => (
+            <div key={contact.id} className="flex items-center gap-1 ml-2 mb-1">
+              <User className="h-4 w-4" />
+              <span>{contact.name}</span>
+            </div>
+          ))}
         </div>
       )}
-      {activeCompany.email && (
-        <div className="flex items-center gap-1">
-          <Mail className="h-4 w-4" />
-          <span>{activeCompany.email}</span>
+      
+      {activeCompany.emails.length > 0 && (
+        <div className="flex flex-col">
+          <span className="font-medium mb-1">E-mails:</span>
+          {activeCompany.emails.map(item => (
+            <div key={item.id} className="flex items-center gap-1 ml-2 mb-1">
+              <Mail className="h-4 w-4" />
+              <span>{item.email}</span>
+            </div>
+          ))}
         </div>
       )}
-      {activeCompany.phone && (
-        <div className="flex items-center gap-1">
-          <Phone className="h-4 w-4" />
-          <span>{activeCompany.phone}</span>
+      
+      {activeCompany.phones.length > 0 && (
+        <div className="flex flex-col">
+          <span className="font-medium mb-1">Telefones:</span>
+          {activeCompany.phones.map(item => (
+            <div key={item.id} className="flex items-center gap-1 ml-2 mb-1">
+              <Phone className="h-4 w-4" />
+              <span>{item.phone}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
