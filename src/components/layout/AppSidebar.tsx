@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/context/MessageContext";
 import { useAuth } from "@/context/AuthContext";
-import { Building, Plus, Pencil, Trash, LogOut, X } from "lucide-react";
-import { useState } from "react";
+import { Building, Plus, Pencil, Trash, LogOut, X, Search, Mail, Phone, User } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/context-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Company } from "@/types";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 export function AppSidebar() {
   const { 
@@ -50,8 +52,34 @@ export function AppSidebar() {
   const [newCompanyName, setNewCompanyName] = useState('');
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [editedCompanyName, setEditedCompanyName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
+  const [showSearchInput, setShowSearchInput] = useState(false);
   const isMobile = useIsMobile();
+
+  // Initialize form
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      contactPerson: ''
+    }
+  });
+
+  // Update filtered companies when search query or companies change
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredCompanies(companies);
+    } else {
+      const filtered = companies.filter(company => 
+        company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (company.email && company.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (company.contactPerson && company.contactPerson.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredCompanies(filtered);
+    }
+  }, [searchQuery, companies]);
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -63,20 +91,33 @@ export function AppSidebar() {
 
   const startEditingCompany = (company: Company) => {
     setEditingCompany(company);
-    setEditedCompanyName(company.name);
+    form.reset({
+      name: company.name,
+      email: company.email || '',
+      phone: company.phone || '',
+      contactPerson: company.contactPerson || ''
+    });
   };
 
   const saveEditedCompany = () => {
-    if (editingCompany && editedCompanyName.trim()) {
-      updateCompany(editingCompany.id, { name: editedCompanyName });
-      setEditingCompany(null);
-      setEditedCompanyName('');
+    if (editingCompany) {
+      const formData = form.getValues();
+      
+      if (formData.name.trim()) {
+        updateCompany(editingCompany.id, { 
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          contactPerson: formData.contactPerson
+        });
+        
+        setEditingCompany(null);
+      }
     }
   };
 
   const closeEditDialog = () => {
     setEditingCompany(null);
-    setEditedCompanyName('');
   };
 
   const handleDeleteCompany = (companyId: string) => {
@@ -87,6 +128,13 @@ export function AppSidebar() {
     selectCompany(companyId);
     if (isMobile) {
       setOpenMobile(false);
+    }
+  };
+
+  const toggleSearch = () => {
+    setShowSearchInput(!showSearchInput);
+    if (showSearchInput) {
+      setSearchQuery('');
     }
   };
 
@@ -112,14 +160,31 @@ export function AppSidebar() {
           <SidebarGroup>
             <div className="px-4 py-2 flex justify-between items-center">
               <h2 className="text-xs font-medium text-muted-foreground">Empresas</h2>
-              {user && (
-                <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
-                  <LogOut className="h-4 w-4" />
+              <div className="flex gap-1">
+                <Button variant="ghost" size="sm" onClick={toggleSearch} className="h-6 px-2">
+                  <Search className="h-4 w-4" />
                 </Button>
-              )}
+                {user && (
+                  <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {showSearchInput && (
+              <div className="px-4 pb-2">
+                <Input 
+                  placeholder="Pesquisar empresas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+            )}
+
             <SidebarMenu>
-              {companies.map((company) => (
+              {filteredCompanies.map((company) => (
                 <ContextMenu key={company.id}>
                   <ContextMenuTrigger>
                     <SidebarMenuItem>
@@ -204,13 +269,56 @@ export function AppSidebar() {
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <Input
-              value={editedCompanyName}
-              onChange={(e) => setEditedCompanyName(e.target.value)}
-              placeholder="Nome da empresa"
-              className="w-full"
-            />
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-sm font-medium">Nome da empresa</label>
+              <Input
+                id="name"
+                {...form.register('name')}
+                placeholder="Nome da empresa"
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-sm font-medium">E-mail</label>
+              <div className="flex items-center space-x-2">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  {...form.register('email')}
+                  placeholder="E-mail de contato"
+                  className="w-full"
+                  type="email"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="phone" className="text-sm font-medium">Telefone</label>
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  {...form.register('phone')}
+                  placeholder="Telefone de contato"
+                  className="w-full"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <label htmlFor="contactPerson" className="text-sm font-medium">Pessoa de contato</label>
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="contactPerson"
+                  {...form.register('contactPerson')}
+                  placeholder="Nome da pessoa de contato"
+                  className="w-full"
+                />
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="secondary" onClick={closeEditDialog}>

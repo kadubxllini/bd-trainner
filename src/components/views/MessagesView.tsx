@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { formatRelative } from 'date-fns';
@@ -37,7 +36,6 @@ const MessagesView = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -51,7 +49,6 @@ const MessagesView = () => {
       if (selectedFile) {
         setIsUploading(true);
         
-        // Upload file to Supabase Storage
         const fileName = `${Date.now()}_${selectedFile.name}`;
         const filePath = `${user.id}/${activeCompany.id}/${fileName}`;
         
@@ -63,7 +60,6 @@ const MessagesView = () => {
           throw uploadError;
         }
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('messages')
           .getPublicUrl(filePath);
@@ -265,7 +261,6 @@ const MessagesView = () => {
         )}
       </div>
 
-      {/* Edit Message Dialog */}
       <Dialog open={!!editingMessage} onOpenChange={(open) => {
         if (!open) closeEditDialog();
       }}>

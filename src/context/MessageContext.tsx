@@ -57,6 +57,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return data.map(company => ({
         id: company.id,
         name: company.name,
+        email: company.email || undefined,
+        phone: company.phone || undefined,
+        contactPerson: company.contact_person || undefined,
         messages: []
       }));
     },
@@ -130,9 +133,16 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Update company mutation
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Company> }) => {
+      const updateData = {
+        name: data.name,
+        email: data.email || null,
+        phone: data.phone || null,
+        contact_person: data.contactPerson || null
+      };
+      
       const { error } = await supabase
         .from('companies')
-        .update({ name: data.name })
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
