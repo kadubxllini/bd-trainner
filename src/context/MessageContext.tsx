@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact } from '@/types';
 import { toast } from 'sonner';
@@ -10,7 +9,7 @@ interface MessageContextProps {
   messages: Message[];
   companies: Company[];
   activeCompany: Company | null;
-  addMessage: (content: string, fileAttachment?: Message['fileAttachment']) => Promise<void>;
+  addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
   updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
   createCompany: (name: string) => Promise<void>;
@@ -41,7 +40,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const queryClient = useQueryClient();
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   
-  // Fetch companies
   const { 
     data: companies = [], 
     isLoading: isLoadingCompanies 
@@ -62,7 +60,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const companiesWithDetails = await Promise.all(
         companiesData.map(async (company) => {
-          // Fetch emails
           const { data: emailsData, error: emailsError } = await supabase
             .from('company_emails')
             .select('*')
@@ -72,7 +69,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error('Error fetching emails:', emailsError);
           }
           
-          // Fetch phones
           const { data: phonesData, error: phonesError } = await supabase
             .from('company_phones')
             .select('*')
@@ -82,7 +78,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error('Error fetching phones:', phonesError);
           }
           
-          // Fetch contacts
           const { data: contactsData, error: contactsError } = await supabase
             .from('company_contacts')
             .select('*')
@@ -117,7 +112,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: !!user
   });
   
-  // Fetch messages for active company
   const { 
     data: messages = [],
     isLoading: isLoadingMessages
@@ -151,14 +145,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: !!user && !!activeCompany
   });
   
-  // Set default active company when companies load
   useEffect(() => {
     if (!activeCompany && companies.length > 0) {
       setActiveCompany(companies[0]);
     }
   }, [companies, activeCompany]);
   
-  // Create company mutation
   const createCompanyMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error("Usuário não autenticado");
@@ -181,7 +173,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Update company mutation
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Company> }) => {
       const { error } = await supabase
@@ -200,7 +191,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Delete company mutation
   const deleteCompanyMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -219,7 +209,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Add email mutation
   const addEmailMutation = useMutation({
     mutationFn: async ({ companyId, email }: { companyId: string, email: string }) => {
       const { error } = await supabase
@@ -237,7 +226,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Delete email mutation
   const deleteEmailMutation = useMutation({
     mutationFn: async (emailId: string) => {
       const { error } = await supabase
@@ -256,7 +244,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Add phone mutation
   const addPhoneMutation = useMutation({
     mutationFn: async ({ companyId, phone }: { companyId: string, phone: string }) => {
       const { error } = await supabase
@@ -274,7 +261,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Delete phone mutation
   const deletePhoneMutation = useMutation({
     mutationFn: async (phoneId: string) => {
       const { error } = await supabase
@@ -293,7 +279,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Add contact mutation
   const addContactMutation = useMutation({
     mutationFn: async ({ companyId, name }: { companyId: string, name: string }) => {
       const { error } = await supabase
@@ -311,7 +296,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Delete contact mutation
   const deleteContactMutation = useMutation({
     mutationFn: async (contactId: string) => {
       const { error } = await supabase
@@ -330,14 +314,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Add message mutation
   const addMessageMutation = useMutation({
     mutationFn: async ({ 
       content, 
-      fileAttachment 
+      fileAttachment,
+      customTimestamp
     }: { 
       content: string, 
-      fileAttachment?: Message['fileAttachment'] 
+      fileAttachment?: Message['fileAttachment'],
+      customTimestamp?: number
     }) => {
       if (!user || !activeCompany) throw new Error("Empresa não selecionada");
       
@@ -351,12 +336,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         fileData = { file_name: fileName, file_url: fileUrl, file_type: fileType };
       }
       
+      const timestamp = customTimestamp || new Date().getTime();
+      
       const { data, error } = await supabase
         .from('messages')
         .insert({
           content: content.trim() || (fileAttachment ? '📎 Arquivo anexado' : ''),
           company_id: activeCompany.id,
           user_id: user.id,
+          timestamp,
           ...fileData
         })
         .select()
@@ -374,7 +362,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Update message mutation
   const updateMessageMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Message> }) => {
       const { error } = await supabase
@@ -393,7 +380,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -412,7 +398,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Function wrappers
   const createCompany = async (name: string) => {
     if (!name.trim()) return;
     await createCompanyMutation.mutateAsync(name);
@@ -429,14 +414,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateCompany = async (id: string, data: Partial<Company>) => {
     await updateCompanyMutation.mutateAsync({ id, data });
     
-    // Update active company if it's the one being updated
     if (activeCompany && activeCompany.id === id) {
       setActiveCompany(prev => prev ? { ...prev, ...data } : prev);
     }
   };
 
   const deleteCompany = async (id: string) => {
-    // Prevent deleting the last company
     if (companies.length <= 1) {
       toast.error('Não é possível excluir a única empresa');
       return;
@@ -444,7 +427,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     await deleteCompanyMutation.mutateAsync(id);
     
-    // Reset active company if it's being deleted
     if (activeCompany && activeCompany.id === id) {
       const nextCompany = companies.find(c => c.id !== id);
       setActiveCompany(nextCompany || null);
@@ -478,9 +460,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await deleteContactMutation.mutateAsync(contactId);
   };
 
-  const addMessage = async (content: string, fileAttachment?: Message['fileAttachment']) => {
+  const addMessage = async (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => {
     if ((!content.trim() && !fileAttachment) || !activeCompany) return;
-    await addMessageMutation.mutateAsync({ content, fileAttachment });
+    await addMessageMutation.mutateAsync({ content, fileAttachment, customTimestamp });
   };
 
   const updateMessage = async (id: string, data: Partial<Message>) => {

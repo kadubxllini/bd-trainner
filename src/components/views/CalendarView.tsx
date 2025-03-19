@@ -5,12 +5,15 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { useMessages } from "@/context/MessageContext";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, MessageSquare } from "lucide-react";
+import { CalendarDays, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
 
-const CalendarView = ({ onSelectDate, onShowAllMessages }: { 
-  onSelectDate: (date: Date | undefined) => void,
-  onShowAllMessages: () => void
-}) => {
+interface CalendarViewProps {
+  onSelectDate: (date: Date | undefined) => void;
+  onShowAllMessages: () => void;
+  isVisible: boolean;
+}
+
+const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { messages, activeCompany } = useMessages();
   
@@ -38,6 +41,8 @@ const CalendarView = ({ onSelectDate, onShowAllMessages }: {
     setSelectedDate(date);
     onSelectDate(date);
   };
+  
+  if (!isVisible) return null;
   
   return (
     <div className="p-4 bg-card rounded-lg shadow-sm mb-4">

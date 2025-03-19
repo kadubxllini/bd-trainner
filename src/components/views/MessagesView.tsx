@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
-import { Send, X, Pencil, Trash, Upload, FileText, Calendar } from 'lucide-react';
+import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -17,12 +17,18 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Message } from '@/types';
 import { toast } from 'sonner';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
+import DatePicker from '@/components/DatePicker';
 import { format } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
@@ -36,6 +42,8 @@ const MessagesView = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showAllMessages, setShowAllMessages] = useState(true);
+  const [messageDate, setMessageDate] = useState<Date>(new Date());
+  const [showCalendar, setShowCalendar] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
@@ -78,7 +86,15 @@ const MessagesView = () => {
         console.log("File uploaded successfully:", publicUrl);
       }
       
-      await addMessage(newMessage, fileAttachment);
+      // Use the selected date for the message timestamp
+      const customTimestamp = new Date(messageDate);
+      // Set hours, minutes, seconds from current time
+      const now = new Date();
+      customTimestamp.setHours(now.getHours());
+      customTimestamp.setMinutes(now.getMinutes());
+      customTimestamp.setSeconds(now.getSeconds());
+      
+      await addMessage(newMessage, fileAttachment, customTimestamp.getTime());
       setNewMessage('');
       setSelectedFile(null);
     } catch (error: any) {
@@ -142,6 +158,10 @@ const MessagesView = () => {
     setShowAllMessages(true);
   };
   
+  const toggleCalendar = () => {
+    setShowCalendar(!showCalendar);
+  };
+  
   // Filter messages by selected date
   const filteredMessages = messages.filter(message => {
     if (showAllMessages) return true;
@@ -178,10 +198,21 @@ const MessagesView = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-4">
+      <div className="flex justify-between items-center mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleCalendar}
+          className="flex items-center gap-1"
+        >
+          <CalendarDays className="h-4 w-4" />
+          <span className="hidden sm:inline">Calendário</span>
+        </Button>
+        
         <CalendarView 
           onSelectDate={handleDateSelect} 
-          onShowAllMessages={handleShowAllMessages} 
+          onShowAllMessages={handleShowAllMessages}
+          isVisible={showCalendar}
         />
       </div>
     
@@ -342,39 +373,47 @@ const MessagesView = () => {
         
         <div className="p-4 border-t border-white/10">
           {activeCompany && (
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Digite uma mensagem..."
-                className="bg-secondary/50 border-white/10 focus-visible:ring-primary/50"
-                disabled={!activeCompany || isUploading}
-              />
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={handleFileChange}
-                disabled={isUploading}
-              />
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleFileButtonClick}
-                className="bg-secondary/50 border-white/10"
-                disabled={!activeCompany || isUploading}
-              >
-                <Upload className="w-4 h-4" />
-              </Button>
-              <Button 
-                size="icon" 
-                onClick={handleSendMessage}
-                className="bg-primary/80 hover:bg-primary"
-                disabled={!activeCompany || isUploading}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <DatePicker date={messageDate} onDateChange={setMessageDate} />
+                <div className="text-xs text-muted-foreground">
+                  Enviando mensagem para: {format(messageDate, "dd/MM/yyyy", { locale: pt })}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Digite uma mensagem..."
+                  className="bg-secondary/50 border-white/10 focus-visible:ring-primary/50"
+                  disabled={!activeCompany || isUploading}
+                />
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  onChange={handleFileChange}
+                  disabled={isUploading}
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleFileButtonClick}
+                  className="bg-secondary/50 border-white/10"
+                  disabled={!activeCompany || isUploading}
+                >
+                  <Upload className="w-4 h-4" />
+                </Button>
+                <Button 
+                  size="icon" 
+                  onClick={handleSendMessage}
+                  className="bg-primary/80 hover:bg-primary"
+                  disabled={!activeCompany || isUploading}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           )}
           {selectedFile && (
