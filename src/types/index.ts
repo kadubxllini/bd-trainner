@@ -8,6 +8,7 @@ export interface Message {
     url: string;
     type: string;
   };
+  theme?: Theme;
 }
 
 export interface CompanyEmail {
