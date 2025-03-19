@@ -16,7 +16,7 @@ interface MessageContextProps {
   selectCompany: (id: string) => void;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
-  addCompanyEmail: (companyId: string, email: string) => Promise<void>;
+  addCompanyEmail: (companyId: string, email: string, jobPosition?: string, preference?: string) => Promise<void>;
   deleteCompanyEmail: (emailId: string) => Promise<void>;
   addCompanyPhone: (companyId: string, phone: string) => Promise<void>;
   deleteCompanyPhone: (phoneId: string) => Promise<void>;
@@ -93,6 +93,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             emails: emailsData?.map(email => ({
               id: email.id,
               email: email.email,
+              jobPosition: email.job_position,
+              preference: email.preference
             })) || [],
             phones: phonesData?.map(phone => ({
               id: phone.id,
@@ -210,10 +212,25 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
   
   const addEmailMutation = useMutation({
-    mutationFn: async ({ companyId, email }: { companyId: string, email: string }) => {
+    mutationFn: async ({ 
+      companyId, 
+      email, 
+      jobPosition, 
+      preference 
+    }: { 
+      companyId: string, 
+      email: string, 
+      jobPosition?: string, 
+      preference?: string 
+    }) => {
       const { error } = await supabase
         .from('company_emails')
-        .insert({ company_id: companyId, email });
+        .insert({ 
+          company_id: companyId, 
+          email,
+          job_position: jobPosition,
+          preference
+        });
       
       if (error) throw error;
     },
@@ -336,7 +353,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         fileData = { file_name: fileName, file_url: fileUrl, file_type: fileType };
       }
       
-      const timestamp = customTimestamp || new Date().getTime();
+      const timestamp = customTimestamp 
+        ? new Date(customTimestamp).toISOString() 
+        : new Date().toISOString();
       
       const { data, error } = await supabase
         .from('messages')
@@ -433,9 +452,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addCompanyEmail = async (companyId: string, email: string) => {
+  const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: string) => {
     if (!email.trim()) return;
-    await addEmailMutation.mutateAsync({ companyId, email });
+    await addEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
   };
 
   const deleteCompanyEmail = async (emailId: string) => {

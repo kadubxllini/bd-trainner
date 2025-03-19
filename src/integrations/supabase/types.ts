@@ -74,18 +74,24 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          job_position: string | null
+          preference: string | null
         }
         Insert: {
           company_id: string
           created_at?: string | null
           email: string
           id?: string
+          job_position?: string | null
+          preference?: string | null
         }
         Update: {
           company_id?: string
           created_at?: string | null
           email?: string
           id?: string
+          job_position?: string | null
+          preference?: string | null
         }
         Relationships: [
           {

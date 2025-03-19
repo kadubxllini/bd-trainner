@@ -14,6 +14,8 @@ export interface Message {
 export interface CompanyEmail {
   id: string;
   email: string;
+  jobPosition?: string;
+  preference?: string;
 }
 
 export interface CompanyPhone {

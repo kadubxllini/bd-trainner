@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -60,6 +59,8 @@ export function AppSidebar() {
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [newEmail, setNewEmail] = useState('');
+  const [newJobPosition, setNewJobPosition] = useState('');
+  const [newPreference, setNewPreference] = useState('');
   const [newPhone, setNewPhone] = useState('');
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,35 +68,29 @@ export function AppSidebar() {
   const [showSearchInput, setShowSearchInput] = useState(false);
   const isMobile = useIsMobile();
 
-  // Initialize form
   const form = useForm({
     defaultValues: {
       name: ''
     }
   });
 
-  // Update filtered companies when search query or companies change
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredCompanies(companies);
     } else {
       const filtered = companies.filter(company => {
-        // Check if company name matches
         if (company.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           return true;
         }
         
-        // Check if any email matches
         if (company.emails.some(e => e.email.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
-        // Check if any phone matches
         if (company.phones.some(p => p.phone.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
-        // Check if any contact matches
         if (company.contacts.some(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
@@ -136,8 +131,10 @@ export function AppSidebar() {
 
   const handleAddEmail = () => {
     if (editingCompany && newEmail.trim()) {
-      addCompanyEmail(editingCompany.id, newEmail);
+      addCompanyEmail(editingCompany.id, newEmail, newJobPosition, newPreference);
       setNewEmail('');
+      setNewJobPosition('');
+      setNewPreference('');
     }
   };
 
@@ -158,6 +155,8 @@ export function AppSidebar() {
   const closeEditDialog = () => {
     setEditingCompany(null);
     setNewEmail('');
+    setNewJobPosition('');
+    setNewPreference('');
     setNewPhone('');
     setNewContact('');
   };
@@ -300,7 +299,6 @@ export function AppSidebar() {
         Versão 1.0
       </SidebarFooter>
 
-      {/* Edit Company Dialog */}
       <Dialog 
         open={!!editingCompany} 
         onOpenChange={(open) => {
@@ -335,14 +333,26 @@ export function AppSidebar() {
             </TabsContent>
             
             <TabsContent value="emails" className="pt-4 space-y-4">
-              <div className="flex gap-2">
+              <div className="space-y-2">
                 <Input
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="Novo e-mail"
-                  className="flex-1"
+                  className="mb-2"
                 />
-                <Button onClick={handleAddEmail} size="sm">Adicionar</Button>
+                <Input
+                  value={newJobPosition}
+                  onChange={(e) => setNewJobPosition(e.target.value)}
+                  placeholder="Vaga/Cargo"
+                  className="mb-2"
+                />
+                <Input
+                  value={newPreference}
+                  onChange={(e) => setNewPreference(e.target.value)}
+                  placeholder="Preferência"
+                  className="mb-2"
+                />
+                <Button onClick={handleAddEmail} size="sm" className="w-full">Adicionar</Button>
               </div>
               
               <div className="space-y-2">
@@ -352,19 +362,33 @@ export function AppSidebar() {
                 ) : (
                   <div className="space-y-2">
                     {editingCompany?.emails.map(item => (
-                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.email}</span>
+                      <div key={item.id} className="flex flex-col p-2 border rounded-md bg-secondary/20">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 text-muted-foreground" />
+                              <span className="font-medium">{item.email}</span>
+                            </div>
+                            {item.jobPosition && (
+                              <div className="text-sm text-muted-foreground pl-6">
+                                Vaga: {item.jobPosition}
+                              </div>
+                            )}
+                            {item.preference && (
+                              <div className="text-sm text-muted-foreground pl-6">
+                                Preferência: {item.preference}
+                              </div>
+                            )}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => deleteCompanyEmail(item.id)} 
+                            className="h-7 w-7 hover:text-destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => deleteCompanyEmail(item.id)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
                       </div>
                     ))}
                   </div>
