@@ -1,9 +1,9 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   ContextMenu,
   ContextMenuContent,
@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -162,23 +162,20 @@ const MessagesView = () => {
     setShowCalendar(!showCalendar);
   };
   
-  // Filter messages by selected date
   const filteredMessages = messages.filter(message => {
     if (showAllMessages) return true;
     
     if (selectedDate) {
       const messageDate = new Date(message.timestamp);
-      return (
-        messageDate.getFullYear() === selectedDate.getFullYear() &&
-        messageDate.getMonth() === selectedDate.getMonth() &&
-        messageDate.getDate() === selectedDate.getDate()
-      );
+      const targetDate = startOfDay(selectedDate);
+      const messageDateStart = startOfDay(messageDate);
+      
+      return targetDate.getTime() === messageDateStart.getTime();
     }
     
     return true;
   });
   
-  // Group messages by date for the "all messages" view
   const groupedMessages = showAllMessages
     ? messages.reduce((groups: Record<string, Message[]>, message) => {
         const date = format(new Date(message.timestamp), 'yyyy-MM-dd');
@@ -233,143 +230,145 @@ const MessagesView = () => {
           )}
         </div>
         
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">Carregando mensagens...</p>
-            </div>
-          ) : !activeCompany ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-center">
-                Selecione uma empresa para visualizar mensagens.
-              </p>
-            </div>
-          ) : showAllMessages ? (
-            sortedDates.length === 0 ? (
+        <ScrollArea className="flex-1 p-4 h-full">
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Carregando mensagens...</p>
+              </div>
+            ) : !activeCompany ? (
               <div className="flex items-center justify-center h-full">
                 <p className="text-muted-foreground text-center">
-                  Nenhuma mensagem ainda.<br />
+                  Selecione uma empresa para visualizar mensagens.
+                </p>
+              </div>
+            ) : showAllMessages ? (
+              sortedDates.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground text-center">
+                    Nenhuma mensagem ainda.<br />
+                    Envie sua primeira mensagem!
+                  </p>
+                </div>
+              ) : (
+                sortedDates.map(date => (
+                  <div key={date} className="mb-8">
+                    <div className="sticky top-2 z-10 mb-4">
+                      <div className="inline-block bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-medium">
+                        {format(new Date(date), "PPP", { locale: pt })}
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      {groupedMessages[date].map((message) => (
+                        <ContextMenu key={message.id}>
+                          <ContextMenuTrigger>
+                            <div className="group animate-slide-up relative">
+                              <div className="message-bubble message-bubble-sent">
+                                <p>{message.content}</p>
+                                
+                                {message.fileAttachment && (
+                                  <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
+                                    <FileText className="h-4 w-4" />
+                                    <a 
+                                      href={message.fileAttachment.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-primary hover:underline"
+                                    >
+                                      {message.fileAttachment.name}
+                                    </a>
+                                  </div>
+                                )}
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
+                                </div>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleDeleteMessage(message.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </ContextMenuTrigger>
+                          
+                          <ContextMenuContent>
+                            <ContextMenuItem onClick={() => startEditingMessage(message)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar mensagem
+                            </ContextMenuItem>
+                            <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
+                              <Trash className="h-4 w-4 mr-2" />
+                              Excluir mensagem
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
+            ) : filteredMessages.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-center">
+                  Nenhuma mensagem para esta data.<br />
                   Envie sua primeira mensagem!
                 </p>
               </div>
             ) : (
-              sortedDates.map(date => (
-                <div key={date} className="mb-8">
-                  <div className="sticky top-2 z-10 mb-4">
-                    <div className="inline-block bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                      {format(new Date(date), "PPP", { locale: pt })}
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    {groupedMessages[date].map((message) => (
-                      <ContextMenu key={message.id}>
-                        <ContextMenuTrigger>
-                          <div className="group animate-slide-up relative">
-                            <div className="message-bubble message-bubble-sent">
-                              <p>{message.content}</p>
-                              
-                              {message.fileAttachment && (
-                                <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
-                                  <FileText className="h-4 w-4" />
-                                  <a 
-                                    href={message.fileAttachment.url} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-primary hover:underline"
-                                  >
-                                    {message.fileAttachment.name}
-                                  </a>
-                                </div>
-                              )}
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
-                              </div>
-                            </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={() => handleDeleteMessage(message.id)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </ContextMenuTrigger>
+              filteredMessages.map((message) => (
+                <ContextMenu key={message.id}>
+                  <ContextMenuTrigger>
+                    <div className="group animate-slide-up relative">
+                      <div className="message-bubble message-bubble-sent">
+                        <p>{message.content}</p>
                         
-                        <ContextMenuContent>
-                          <ContextMenuItem onClick={() => startEditingMessage(message)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar mensagem
-                          </ContextMenuItem>
-                          <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
-                            <Trash className="h-4 w-4 mr-2" />
-                            Excluir mensagem
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )
-          ) : filteredMessages.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground text-center">
-                Nenhuma mensagem para esta data.<br />
-                Envie sua primeira mensagem!
-              </p>
-            </div>
-          ) : (
-            filteredMessages.map((message) => (
-              <ContextMenu key={message.id}>
-                <ContextMenuTrigger>
-                  <div className="group animate-slide-up relative">
-                    <div className="message-bubble message-bubble-sent">
-                      <p>{message.content}</p>
-                      
-                      {message.fileAttachment && (
-                        <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          <a 
-                            href={message.fileAttachment.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary hover:underline"
-                          >
-                            {message.fileAttachment.name}
-                          </a>
+                        {message.fileAttachment && (
+                          <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <a 
+                              href={message.fileAttachment.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
+                            >
+                              {message.fileAttachment.name}
+                            </a>
+                          </div>
+                        )}
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
                         </div>
-                      )}
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
                       </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteMessage(message.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteMessage(message.id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </ContextMenuTrigger>
-                
-                <ContextMenuContent>
-                  <ContextMenuItem onClick={() => startEditingMessage(message)}>
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Editar mensagem
-                  </ContextMenuItem>
-                  <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
-                    <Trash className="h-4 w-4 mr-2" />
-                    Excluir mensagem
-                  </ContextMenuItem>
-                </ContextMenuContent>
-              </ContextMenu>
-            ))
-          )}
+                  </ContextMenuTrigger>
+                  
+                  <ContextMenuContent>
+                    <ContextMenuItem onClick={() => startEditingMessage(message)}>
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Editar mensagem
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
+                      <Trash className="h-4 w-4 mr-2" />
+                      Excluir mensagem
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
+              ))
+            )}
+          </div>
           <div ref={messagesEndRef} />
-        </div>
+        </ScrollArea>
         
         <div className="p-4 border-t border-white/10">
           {activeCompany && (

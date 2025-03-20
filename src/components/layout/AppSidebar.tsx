@@ -1,3 +1,4 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
@@ -70,7 +71,9 @@ export function AppSidebar() {
 
   const form = useForm({
     defaultValues: {
-      name: ''
+      name: '',
+      jobPosition: '',
+      preference: ''
     }
   });
 
@@ -113,7 +116,9 @@ export function AppSidebar() {
   const startEditingCompany = (company: Company) => {
     setEditingCompany(company);
     form.reset({
-      name: company.name
+      name: company.name,
+      jobPosition: '',
+      preference: ''
     });
   };
 
@@ -329,6 +334,30 @@ export function AppSidebar() {
                     className="w-full"
                   />
                 </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="jobPosition" className="text-sm font-medium">Vaga/Cargo</label>
+                  <Input
+                    id="jobPosition"
+                    {...form.register('jobPosition')}
+                    placeholder="Vaga ou cargo oferecido"
+                    className="w-full"
+                    value={newJobPosition}
+                    onChange={(e) => setNewJobPosition(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="preference" className="text-sm font-medium">Preferência</label>
+                  <Input
+                    id="preference"
+                    {...form.register('preference')}
+                    placeholder="Preferência da empresa"
+                    className="w-full"
+                    value={newPreference}
+                    onChange={(e) => setNewPreference(e.target.value)}
+                  />
+                </div>
               </div>
             </TabsContent>
             
@@ -338,18 +367,6 @@ export function AppSidebar() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="Novo e-mail"
-                  className="mb-2"
-                />
-                <Input
-                  value={newJobPosition}
-                  onChange={(e) => setNewJobPosition(e.target.value)}
-                  placeholder="Vaga/Cargo"
-                  className="mb-2"
-                />
-                <Input
-                  value={newPreference}
-                  onChange={(e) => setNewPreference(e.target.value)}
-                  placeholder="Preferência"
                   className="mb-2"
                 />
                 <Button onClick={handleAddEmail} size="sm" className="w-full">Adicionar</Button>
