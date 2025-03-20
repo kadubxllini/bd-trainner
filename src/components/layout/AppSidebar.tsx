@@ -1,3 +1,4 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
@@ -30,6 +31,7 @@ import {
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
