@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact } from '@/types';
+import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -16,7 +16,7 @@ interface MessageContextProps {
   selectCompany: (id: string) => void;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
   deleteCompany: (id: string) => Promise<void>;
-  addCompanyEmail: (companyId: string, email: string, jobPosition?: string, preference?: string) => Promise<void>;
+  addCompanyEmail: (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => Promise<void>;
   deleteCompanyEmail: (emailId: string) => Promise<void>;
   addCompanyPhone: (companyId: string, phone: string) => Promise<void>;
   deleteCompanyPhone: (phoneId: string) => Promise<void>;
@@ -90,6 +90,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: company.id,
             name: company.name,
+            jobPosition: company.job_position,
+            urgency: company.urgency as UrgencyLevel | undefined,
+            inProgress: company.in_progress,
             emails: emailsData?.map(email => ({
               id: email.id,
               email: email.email,
@@ -177,9 +180,16 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const updateCompanyMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Company> }) => {
+      const updateData: any = {};
+      
+      if (data.name) updateData.name = data.name;
+      if (data.jobPosition !== undefined) updateData.job_position = data.jobPosition;
+      if (data.urgency !== undefined) updateData.urgency = data.urgency;
+      if (data.inProgress !== undefined) updateData.in_progress = data.inProgress;
+      
       const { error } = await supabase
         .from('companies')
-        .update({ name: data.name })
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
@@ -221,7 +231,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       companyId: string, 
       email: string, 
       jobPosition?: string, 
-      preference?: string 
+      preference?: UrgencyLevel 
     }) => {
       const { error } = await supabase
         .from('company_emails')
@@ -452,7 +462,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: string) => {
+  const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => {
     if (!email.trim()) return;
     await addEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
   };

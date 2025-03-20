@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -29,7 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format, startOfDay } from 'date-fns';
+import { format, startOfDay, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -178,7 +179,9 @@ const MessagesView = () => {
   
   const groupedMessages = showAllMessages
     ? messages.reduce((groups: Record<string, Message[]>, message) => {
-        const date = format(new Date(message.timestamp), 'yyyy-MM-dd');
+        // Get date in local time to ensure consistent display
+        const messageDate = new Date(message.timestamp);
+        const date = format(messageDate, 'yyyy-MM-dd');
         if (!groups[date]) {
           groups[date] = [];
         }

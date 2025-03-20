@@ -15,7 +15,7 @@ export interface CompanyEmail {
   id: string;
   email: string;
   jobPosition?: string;
-  preference?: string;
+  preference?: UrgencyLevel;
 }
 
 export interface CompanyPhone {
@@ -35,6 +35,10 @@ export interface Company {
   phones: CompanyPhone[];
   contacts: CompanyContact[];
   messages: Message[];
+  inProgress?: boolean; // "decorrer" field
+  jobPosition?: string;
+  urgency?: UrgencyLevel;
 }
 
 export type Theme = 'Trabalho' | 'Saúde' | 'Pessoal';
+export type UrgencyLevel = 'Baixa' | 'Média' | 'Alta';
