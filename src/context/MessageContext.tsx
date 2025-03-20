@@ -23,6 +23,8 @@ interface MessageContextProps {
   deleteCompanyPhone: (phoneId: string) => Promise<void>;
   addCompanyContact: (companyId: string, name: string) => Promise<void>;
   deleteCompanyContact: (contactId: string) => Promise<void>;
+  addJobPosition: (title: string) => Promise<void>;
+  deleteJobPosition: (title: string) => Promise<void>;
   isLoading: boolean;
   availableJobPositions: string[];
 }
@@ -65,6 +67,76 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     fetchJobPositions();
   }, [user]);
+  
+  // Adicionar vagas de emprego comuns
+  useEffect(() => {
+    const addDefaultJobPositions = async () => {
+      if (!user || availableJobPositions.length > 0) return;
+      
+      const defaultPositions = [
+        "Desenvolvedor Front-end",
+        "Desenvolvedor Back-end",
+        "Desenvolvedor Full-stack",
+        "Analista de Sistemas",
+        "Analista de Dados",
+        "Cientista de Dados",
+        "Gerente de Projetos",
+        "Designer UI/UX",
+        "Engenheiro de Software",
+        "DevOps Engineer",
+        "QA Tester",
+        "Analista de QA",
+        "Scrum Master",
+        "Product Owner",
+        "Analista de Negócios",
+        "Analista de Marketing Digital",
+        "Social Media Manager",
+        "Customer Success",
+        "Administrador de Redes",
+        "Administrador de Sistemas",
+        "Técnico de Suporte",
+        "Analista de Suporte",
+        "Assistente Administrativo",
+        "Analista de RH",
+        "Recrutador",
+        "Analista Financeiro",
+        "Contador",
+        "Advogado",
+        "Assistente Jurídico",
+        "Vendedor",
+        "Representante Comercial",
+        "Gerente de Vendas",
+        "Auxiliar de Produção",
+        "Operador de Máquinas",
+        "Motorista",
+        "Entregador",
+        "Recepcionista",
+        "Atendente de Loja",
+        "Operador de Caixa",
+        "Garçom/Garçonete",
+        "Cozinheiro",
+        "Auxiliar de Cozinha",
+        "Professor",
+        "Instrutor",
+        "Médico",
+        "Enfermeiro",
+        "Técnico de Enfermagem",
+        "Fisioterapeuta",
+        "Psicólogo",
+        "Nutricionista",
+        "Arquiteto",
+        "Engenheiro Civil"
+      ];
+      
+      for (const position of defaultPositions) {
+        await addJobPositionToDatabase(position);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+    };
+    
+    addDefaultJobPositions();
+  }, [user, availableJobPositions.length]);
   
   const { 
     data: companies = [], 
@@ -464,6 +536,77 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
+  const addJobPositionMutation = useMutation({
+    mutationFn: async (title: string) => {
+      return await addJobPositionToDatabase(title);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+      refreshJobPositions();
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar vaga: ${error.message}`);
+    }
+  });
+
+  const deleteJobPositionMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase
+        .from('job_positions')
+        .delete()
+        .eq('title', title);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+      refreshJobPositions();
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover vaga: ${error.message}`);
+    }
+  });
+
+  const addJobPositionToDatabase = async (title: string) => {
+    // Verificar se a vaga já existe
+    const { data: existingPosition } = await supabase
+      .from('job_positions')
+      .select('*')
+      .eq('title', title)
+      .single();
+
+    if (existingPosition) {
+      return existingPosition;
+    }
+
+    const { data, error } = await supabase
+      .from('job_positions')
+      .insert({ title })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const refreshJobPositions = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('job_positions')
+      .select('title')
+      .order('title', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching job positions:', error);
+      return;
+    }
+    
+    if (data) {
+      setAvailableJobPositions(data.map(job => job.title));
+    }
+  };
+
   const createCompany = async (name: string) => {
     if (!name.trim()) return;
     await createCompanyMutation.mutateAsync(name);
@@ -539,6 +682,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await deleteMessageMutation.mutateAsync(id);
   };
 
+  const addJobPosition = async (title: string) => {
+    if (!title.trim()) return;
+    await addJobPositionMutation.mutateAsync(title);
+  };
+
+  const deleteJobPosition = async (title: string) => {
+    await deleteJobPositionMutation.mutateAsync(title);
+  };
+
   return (
     <MessageContext.Provider
       value={{
@@ -558,6 +710,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteCompanyPhone,
         addCompanyContact,
         deleteCompanyContact,
+        addJobPosition,
+        deleteJobPosition,
         isLoading: isLoadingCompanies || isLoadingMessages,
         availableJobPositions
       }}

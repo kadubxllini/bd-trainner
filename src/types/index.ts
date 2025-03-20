@@ -35,7 +35,7 @@ export interface Company {
   phones: CompanyPhone[];
   contacts: CompanyContact[];
   messages: Message[];
-  inProgress?: string; // Changed from boolean to string
+  inProgress?: string;
   jobPosition?: string;
   urgency?: UrgencyLevel;
 }

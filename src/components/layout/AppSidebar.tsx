@@ -27,7 +27,10 @@ import {
   Filter,
   AlertCircle,
   Clock,
-  BriefcaseBusiness
+  BriefcaseBusiness,
+  Check,
+  PlusCircle,
+  MinusCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -39,6 +42,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   ContextMenu,
@@ -58,12 +62,24 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from "@/types";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 export function AppSidebar() {
   const { 
@@ -80,7 +96,9 @@ export function AppSidebar() {
     addCompanyContact,
     deleteCompanyContact,
     isLoading,
-    availableJobPositions
+    availableJobPositions,
+    addJobPosition,
+    deleteJobPosition
   } = useMessages();
   
   const { user, signOut } = useAuth();
@@ -103,6 +121,9 @@ export function AppSidebar() {
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [customJobPosition, setCustomJobPosition] = useState('');
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
+  const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -235,8 +256,15 @@ export function AppSidebar() {
     setNewContact('');
   };
 
-  const handleDeleteCompany = (companyId: string) => {
-    deleteCompany(companyId);
+  const handleDeleteCompany = (company: Company) => {
+    setCompanyToDelete(company);
+  };
+
+  const confirmDeleteCompany = () => {
+    if (companyToDelete) {
+      deleteCompany(companyToDelete.id);
+      setCompanyToDelete(null);
+    }
   };
 
   const handleCompanySelect = (companyId: string) => {
@@ -285,6 +313,19 @@ export function AppSidebar() {
       form.setValue('jobPosition', customJobPosition);
       setCustomJobPosition('');
     }
+  };
+
+  const handleAddGlobalJobPosition = () => {
+    if (newGlobalJobPosition.trim()) {
+      addJobPosition(newGlobalJobPosition);
+      setNewGlobalJobPosition('');
+      toast.success(`Vaga "${newGlobalJobPosition}" adicionada`);
+    }
+  };
+
+  const handleDeleteJobPosition = (jobPosition: string) => {
+    deleteJobPosition(jobPosition);
+    toast.success(`Vaga "${jobPosition}" removida`);
   };
 
   const getUrgencyColor = (urgency?: UrgencyLevel) => {
@@ -337,6 +378,14 @@ export function AppSidebar() {
                 <Button variant="ghost" size="sm" onClick={toggleSearch} className="h-6 px-2">
                   <Search className="h-4 w-4" />
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowJobPositionsManager(true)} 
+                  className="h-6 px-2"
+                >
+                  <BriefcaseBusiness className="h-4 w-4" />
+                </Button>
                 {user && (
                   <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
                     <LogOut className="h-4 w-4" />
@@ -379,17 +428,19 @@ export function AppSidebar() {
                         <div className="space-y-2">
                           <p className="text-xs font-medium">Selecione uma vaga:</p>
                           <div className="flex flex-col space-y-1">
-                            {availableJobPositions.map(job => (
-                              <Button 
-                                key={job}
-                                size="sm" 
-                                variant={(filterType === 'job' && jobPositionFilter === job) ? "default" : "outline"} 
-                                className="text-xs h-7 justify-start"
-                                onClick={() => filterByJobPosition(job)}
-                              >
-                                {job}
-                              </Button>
-                            ))}
+                            <ScrollArea className="h-[200px] pr-3">
+                              {availableJobPositions.map(job => (
+                                <Button 
+                                  key={job}
+                                  size="sm" 
+                                  variant={(filterType === 'job' && jobPositionFilter === job) ? "default" : "outline"} 
+                                  className="text-xs h-7 justify-start w-full mb-1"
+                                  onClick={() => filterByJobPosition(job)}
+                                >
+                                  {job}
+                                </Button>
+                              ))}
+                            </ScrollArea>
                           </div>
                         </div>
                       </PopoverContent>
@@ -516,7 +567,7 @@ export function AppSidebar() {
                       Editar empresa
                     </ContextMenuItem>
                     <ContextMenuItem 
-                      onClick={() => handleDeleteCompany(company.id)} 
+                      onClick={() => handleDeleteCompany(company)} 
                       className="text-destructive"
                       disabled={companies.length <= 1}
                     >
@@ -567,6 +618,66 @@ export function AppSidebar() {
         Versão 1.0
       </SidebarFooter>
 
+      {/* Dialog para gerenciar vagas/empregos */}
+      <Dialog
+        open={showJobPositionsManager}
+        onOpenChange={setShowJobPositionsManager}
+      >
+        <DialogContent className="sm:max-w-md bg-background">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Vagas</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova vagas disponíveis para todas as empresas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Input
+                value={newGlobalJobPosition}
+                onChange={(e) => setNewGlobalJobPosition(e.target.value)}
+                placeholder="Nova vaga"
+                className="flex-1"
+              />
+              <Button onClick={handleAddGlobalJobPosition}>Adicionar</Button>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Vagas disponíveis</h3>
+              <ScrollArea className="h-[200px] pr-3">
+                {availableJobPositions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma vaga cadastrada</p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableJobPositions.map(job => (
+                      <div key={job} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <BriefcaseBusiness className="h-4 w-4 text-muted-foreground" />
+                          <span>{job}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteJobPosition(job)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowJobPositionsManager(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar empresa */}
       <Dialog 
         open={!!editingCompany} 
         onOpenChange={(open) => {
@@ -704,41 +815,43 @@ export function AppSidebar() {
                 {editingCompany?.emails.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado</p>
                 ) : (
-                  <div className="space-y-2">
-                    {editingCompany?.emails.map(item => (
-                      <div key={item.id} className="flex flex-col p-2 border rounded-md bg-secondary/20">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{item.email}</span>
+                  <ScrollArea className="h-[200px] pr-3">
+                    <div className="space-y-2">
+                      {editingCompany?.emails.map(item => (
+                        <div key={item.id} className="flex flex-col p-2 border rounded-md bg-secondary/20">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{item.email}</span>
+                              </div>
+                              {item.jobPosition && (
+                                <div className="text-sm text-muted-foreground pl-6">
+                                  Vaga: {item.jobPosition}
+                                </div>
+                              )}
+                              {item.preference && (
+                                <div className="text-sm flex items-center pl-6">
+                                  {getUrgencyIndicator(item.preference as UrgencyLevel)}
+                                  <span className="text-muted-foreground">
+                                    Urgência: {item.preference}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            {item.jobPosition && (
-                              <div className="text-sm text-muted-foreground pl-6">
-                                Vaga: {item.jobPosition}
-                              </div>
-                            )}
-                            {item.preference && (
-                              <div className="text-sm flex items-center pl-6">
-                                {getUrgencyIndicator(item.preference as UrgencyLevel)}
-                                <span className="text-muted-foreground">
-                                  Urgência: {item.preference}
-                                </span>
-                              </div>
-                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => deleteCompanyEmail(item.id)} 
+                              className="h-7 w-7 hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => deleteCompanyEmail(item.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
             </TabsContent>
@@ -759,24 +872,26 @@ export function AppSidebar() {
                 {editingCompany?.phones.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum telefone cadastrado</p>
                 ) : (
-                  <div className="space-y-2">
-                    {editingCompany?.phones.map(item => (
-                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.phone}</span>
+                  <ScrollArea className="h-[200px] pr-3">
+                    <div className="space-y-2">
+                      {editingCompany?.phones.map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{item.phone}</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => deleteCompanyPhone(item.id)} 
+                            className="h-7 w-7 hover:text-destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => deleteCompanyPhone(item.id)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
             </TabsContent>
@@ -797,24 +912,26 @@ export function AppSidebar() {
                 {editingCompany?.contacts.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Nenhum contato cadastrado</p>
                 ) : (
-                  <div className="space-y-2">
-                    {editingCompany?.contacts.map(item => (
-                      <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.name}</span>
+                  <ScrollArea className="h-[200px] pr-3">
+                    <div className="space-y-2">
+                      {editingCompany?.contacts.map(item => (
+                        <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <span>{item.name}</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => deleteCompanyContact(item.id)} 
+                            className="h-7 w-7 hover:text-destructive"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => deleteCompanyContact(item.id)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
             </TabsContent>
@@ -833,6 +950,25 @@ export function AppSidebar() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Alert Dialog para confirmar exclusão de empresa */}
+      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
+        <AlertDialogContent className="bg-background">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a empresa "{companyToDelete?.name}"? 
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCompany} className="bg-destructive text-destructive-foreground">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sidebar>
   );
 }
