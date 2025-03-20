@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format, startOfDay, parseISO } from 'date-fns';
+import { format, startOfDay, parseISO, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -86,10 +86,8 @@ const MessagesView = () => {
         console.log("File uploaded successfully:", publicUrl);
       }
       
-      // Use the selected date for the message timestamp
-      const customTimestamp = new Date(messageDate);
+      const customTimestamp = addDays(new Date(messageDate), 1);
       
-      // Set hours, minutes, seconds from current time
       const now = new Date();
       customTimestamp.setHours(now.getHours());
       customTimestamp.setMinutes(now.getMinutes());
@@ -166,6 +164,15 @@ const MessagesView = () => {
     setShowCalendar(!showCalendar);
   };
   
+  const formatMessageDate = (timestamp: number) => {
+    const date = addDays(new Date(timestamp), 0);
+    return format(date, "PPP", { locale: pt });
+  };
+  
+  const formatMessageTime = (timestamp: number) => {
+    return format(new Date(timestamp), "HH:mm", { locale: pt });
+  };
+  
   const filteredMessages = messages.filter(message => {
     if (showAllMessages) return true;
     
@@ -182,8 +189,7 @@ const MessagesView = () => {
   
   const groupedMessages = showAllMessages
     ? messages.reduce((groups: Record<string, Message[]>, message) => {
-        // Get date in local time to ensure consistent display
-        const messageDate = new Date(message.timestamp);
+        const messageDate = addDays(new Date(message.timestamp), 0);
         const date = format(messageDate, 'yyyy-MM-dd');
         if (!groups[date]) {
           groups[date] = [];
@@ -286,7 +292,7 @@ const MessagesView = () => {
                                   </div>
                                 )}
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
+                                  {formatMessageTime(message.timestamp)}
                                 </div>
                               </div>
                               <Button
@@ -345,7 +351,7 @@ const MessagesView = () => {
                           </div>
                         )}
                         <div className="text-xs text-muted-foreground mt-1">
-                          {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
+                          {formatMessageTime(message.timestamp)}
                         </div>
                       </div>
                       <Button
@@ -445,7 +451,7 @@ const MessagesView = () => {
             if (!open) closeEditDialog();
           }}
         >
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md bg-background">
             <DialogHeader>
               <DialogTitle>Editar mensagem</DialogTitle>
             </DialogHeader>

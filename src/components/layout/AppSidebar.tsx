@@ -26,7 +26,8 @@ import {
   User, 
   Filter,
   AlertCircle,
-  Clock
+  Clock,
+  BriefcaseBusiness
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -95,7 +96,9 @@ export function AppSidebar() {
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'job' | 'urgency' | 'inProgress'>('all');
+  const [jobPositionFilter, setJobPositionFilter] = useState<string | null>(null);
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyLevel | null>(null);
+  const [inProgressFilter, setInProgressFilter] = useState<boolean>(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -116,8 +119,8 @@ export function AppSidebar() {
       let filtered = [...companies];
       
       // Apply filters
-      if (filterType === 'job' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.jobPosition && company.jobPosition.trim() !== '');
+      if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
+        filtered = filtered.filter(company => company.jobPosition === jobPositionFilter);
       } else if (filterType === 'urgency' && filtered.length > 0) {
         if (urgencyFilter) {
           filtered = filtered.filter(company => company.urgency === urgencyFilter);
@@ -151,8 +154,8 @@ export function AppSidebar() {
       });
       
       // Apply additional filters
-      if (filterType === 'job' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.jobPosition && company.jobPosition.trim() !== '');
+      if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
+        filtered = filtered.filter(company => company.jobPosition === jobPositionFilter);
       } else if (filterType === 'urgency' && filtered.length > 0) {
         if (urgencyFilter) {
           filtered = filtered.filter(company => company.urgency === urgencyFilter);
@@ -165,7 +168,7 @@ export function AppSidebar() {
       
       setFilteredCompanies(filtered);
     }
-  }, [searchQuery, companies, filterType, urgencyFilter]);
+  }, [searchQuery, companies, filterType, urgencyFilter, jobPositionFilter, inProgressFilter]);
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -259,6 +262,16 @@ export function AppSidebar() {
     setFilterType('urgency');
   };
 
+  const filterByJobPosition = (jobPosition: string | null) => {
+    setJobPositionFilter(jobPosition);
+    setFilterType('job');
+  };
+
+  const filterByInProgress = () => {
+    setInProgressFilter(true);
+    setFilterType('inProgress');
+  };
+
   const handleJobPositionChange = (value: string) => {
     if (value === 'custom') {
       setCustomJobPosition('');
@@ -344,73 +357,100 @@ export function AppSidebar() {
                       onClick={() => {
                         setFilterType('all');
                         setUrgencyFilter(null);
+                        setJobPositionFilter(null);
+                        setInProgressFilter(false);
                       }}
                     >
                       Todos
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant={filterType === 'job' ? "default" : "outline"} 
-                      className="text-xs h-7" 
-                      onClick={() => {
-                        setFilterType('job');
-                        setUrgencyFilter(null);
-                      }}
-                    >
-                      Vaga
-                    </Button>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant={filterType === 'job' ? "default" : "outline"} 
+                          className="text-xs h-7 flex items-center gap-1" 
+                        >
+                          <BriefcaseBusiness className="h-3 w-3" />
+                          Vaga
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Selecione uma vaga:</p>
+                          <div className="flex flex-col space-y-1">
+                            {availableJobPositions.map(job => (
+                              <Button 
+                                key={job}
+                                size="sm" 
+                                variant={(filterType === 'job' && jobPositionFilter === job) ? "default" : "outline"} 
+                                className="text-xs h-7 justify-start"
+                                onClick={() => filterByJobPosition(job)}
+                              >
+                                {job}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant={filterType === 'urgency' ? "default" : "outline"} 
+                          className="text-xs h-7 flex items-center gap-1" 
+                        >
+                          <AlertCircle className="h-3 w-3" />
+                          Urgência
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Selecione o nível de urgência:</p>
+                          <div className="flex flex-col space-y-1">
+                            <Button 
+                              size="sm" 
+                              variant={(filterType === 'urgency' && urgencyFilter === 'Baixa') ? "default" : "outline"} 
+                              className="text-xs h-7 flex items-center gap-1 justify-start" 
+                              onClick={() => filterByUrgency('Baixa')}
+                            >
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              Baixa
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant={(filterType === 'urgency' && urgencyFilter === 'Média') ? "default" : "outline"} 
+                              className="text-xs h-7 flex items-center gap-1 justify-start" 
+                              onClick={() => filterByUrgency('Média')}
+                            >
+                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                              Média
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant={(filterType === 'urgency' && urgencyFilter === 'Alta') ? "default" : "outline"} 
+                              className="text-xs h-7 flex items-center gap-1 justify-start" 
+                              onClick={() => filterByUrgency('Alta')}
+                            >
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              Alta
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
                     <Button 
                       size="sm" 
                       variant={filterType === 'inProgress' ? "default" : "outline"} 
-                      className="text-xs h-7" 
-                      onClick={() => {
-                        setFilterType('inProgress');
-                        setUrgencyFilter(null);
-                      }}
+                      className="text-xs h-7 flex items-center gap-1" 
+                      onClick={filterByInProgress}
                     >
-                      Em decorrer
+                      <Clock className="h-3 w-3" />
+                      Decorrer
                     </Button>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium">Urgência:</div>
-                    <div className="flex flex-wrap gap-1">
-                      <Button 
-                        size="sm" 
-                        variant={(filterType === 'urgency' && !urgencyFilter) ? "default" : "outline"} 
-                        className="text-xs h-7" 
-                        onClick={() => filterByUrgency(null)}
-                      >
-                        Todas
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant={(filterType === 'urgency' && urgencyFilter === 'Baixa') ? "default" : "outline"} 
-                        className="text-xs h-7 flex items-center gap-1" 
-                        onClick={() => filterByUrgency('Baixa')}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        Baixa
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant={(filterType === 'urgency' && urgencyFilter === 'Média') ? "default" : "outline"} 
-                        className="text-xs h-7 flex items-center gap-1" 
-                        onClick={() => filterByUrgency('Média')}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                        Média
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant={(filterType === 'urgency' && urgencyFilter === 'Alta') ? "default" : "outline"} 
-                        className="text-xs h-7 flex items-center gap-1" 
-                        onClick={() => filterByUrgency('Alta')}
-                      >
-                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        Alta
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -533,7 +573,7 @@ export function AppSidebar() {
           if (!open) closeEditDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-background">
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
