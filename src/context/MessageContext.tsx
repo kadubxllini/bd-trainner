@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from '@/types';
 import { toast } from 'sonner';
@@ -60,6 +61,17 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const companiesWithDetails = await Promise.all(
         companiesData.map(async (company) => {
+          // Fetch additional company details
+          const { data: companyDetailsData, error: companyDetailsError } = await supabase
+            .from('companies')
+            .select('job_position, urgency, in_progress')
+            .eq('id', company.id)
+            .single();
+            
+          const jobPosition = companyDetailsData?.job_position || null;
+          const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
+          const inProgress = companyDetailsData?.in_progress || false;
+          
           const { data: emailsData, error: emailsError } = await supabase
             .from('company_emails')
             .select('*')
@@ -90,14 +102,14 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: company.id,
             name: company.name,
-            jobPosition: company.job_position,
-            urgency: company.urgency as UrgencyLevel | undefined,
-            inProgress: company.in_progress,
+            jobPosition: jobPosition,
+            urgency: urgency,
+            inProgress: inProgress,
             emails: emailsData?.map(email => ({
               id: email.id,
               email: email.email,
               jobPosition: email.job_position,
-              preference: email.preference
+              preference: email.preference as UrgencyLevel | undefined
             })) || [],
             phones: phonesData?.map(phone => ({
               id: phone.id,
