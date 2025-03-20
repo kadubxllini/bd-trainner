@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -77,7 +76,8 @@ export function AppSidebar() {
     deleteCompanyPhone,
     addCompanyContact,
     deleteCompanyContact,
-    isLoading
+    isLoading,
+    availableJobPositions
   } = useMessages();
   
   const { user, signOut } = useAuth();
@@ -93,9 +93,11 @@ export function AppSidebar() {
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'job' | 'urgency' | 'inProgress'>('all');
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyLevel | null>(null);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
+  const [customJobPosition, setCustomJobPosition] = useState('');
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -103,7 +105,7 @@ export function AppSidebar() {
       name: '',
       jobPosition: '',
       urgency: 'Média' as UrgencyLevel,
-      inProgress: false
+      inProgress: ''
     }
   });
 
@@ -115,9 +117,13 @@ export function AppSidebar() {
       if (filterType === 'job' && filtered.length > 0) {
         filtered = filtered.filter(company => company.jobPosition && company.jobPosition.trim() !== '');
       } else if (filterType === 'urgency' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.urgency);
+        if (urgencyFilter) {
+          filtered = filtered.filter(company => company.urgency === urgencyFilter);
+        } else {
+          filtered = filtered.filter(company => company.urgency);
+        }
       } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.inProgress);
+        filtered = filtered.filter(company => company.inProgress && company.inProgress.trim() !== '');
       }
       
       setFilteredCompanies(filtered);
@@ -146,14 +152,18 @@ export function AppSidebar() {
       if (filterType === 'job' && filtered.length > 0) {
         filtered = filtered.filter(company => company.jobPosition && company.jobPosition.trim() !== '');
       } else if (filterType === 'urgency' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.urgency);
+        if (urgencyFilter) {
+          filtered = filtered.filter(company => company.urgency === urgencyFilter);
+        } else {
+          filtered = filtered.filter(company => company.urgency);
+        }
       } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.inProgress);
+        filtered = filtered.filter(company => company.inProgress && company.inProgress.trim() !== '');
       }
       
       setFilteredCompanies(filtered);
     }
-  }, [searchQuery, companies, filterType]);
+  }, [searchQuery, companies, filterType, urgencyFilter]);
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -169,7 +179,7 @@ export function AppSidebar() {
       name: company.name,
       jobPosition: company.jobPosition || '',
       urgency: company.urgency || 'Média',
-      inProgress: company.inProgress || false
+      inProgress: company.inProgress || ''
     });
   };
 
@@ -182,7 +192,7 @@ export function AppSidebar() {
           name: formData.name,
           jobPosition: formData.jobPosition || undefined,
           urgency: formData.urgency,
-          inProgress: formData.inProgress
+          inProgress: formData.inProgress || undefined
         });
       }
     }
@@ -240,6 +250,26 @@ export function AppSidebar() {
 
   const toggleFilterMenu = () => {
     setShowFilterMenu(!showFilterMenu);
+  };
+
+  const filterByUrgency = (urgency: UrgencyLevel | null) => {
+    setUrgencyFilter(urgency);
+    setFilterType('urgency');
+  };
+
+  const handleJobPositionChange = (value: string) => {
+    if (value === 'custom') {
+      setCustomJobPosition('');
+    } else {
+      form.setValue('jobPosition', value);
+    }
+  };
+
+  const applyCustomJobPosition = () => {
+    if (customJobPosition.trim()) {
+      form.setValue('jobPosition', customJobPosition);
+      setCustomJobPosition('');
+    }
   };
 
   const getUrgencyColor = (urgency?: UrgencyLevel) => {
@@ -309,7 +339,10 @@ export function AppSidebar() {
                       size="sm" 
                       variant={filterType === 'all' ? "default" : "outline"} 
                       className="text-xs h-7" 
-                      onClick={() => setFilterType('all')}
+                      onClick={() => {
+                        setFilterType('all');
+                        setUrgencyFilter(null);
+                      }}
                     >
                       Todos
                     </Button>
@@ -317,26 +350,65 @@ export function AppSidebar() {
                       size="sm" 
                       variant={filterType === 'job' ? "default" : "outline"} 
                       className="text-xs h-7" 
-                      onClick={() => setFilterType('job')}
+                      onClick={() => {
+                        setFilterType('job');
+                        setUrgencyFilter(null);
+                      }}
                     >
                       Vaga
                     </Button>
                     <Button 
                       size="sm" 
-                      variant={filterType === 'urgency' ? "default" : "outline"} 
-                      className="text-xs h-7" 
-                      onClick={() => setFilterType('urgency')}
-                    >
-                      Urgência
-                    </Button>
-                    <Button 
-                      size="sm" 
                       variant={filterType === 'inProgress' ? "default" : "outline"} 
                       className="text-xs h-7" 
-                      onClick={() => setFilterType('inProgress')}
+                      onClick={() => {
+                        setFilterType('inProgress');
+                        setUrgencyFilter(null);
+                      }}
                     >
                       Em decorrer
                     </Button>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium">Urgência:</div>
+                    <div className="flex flex-wrap gap-1">
+                      <Button 
+                        size="sm" 
+                        variant={(filterType === 'urgency' && !urgencyFilter) ? "default" : "outline"} 
+                        className="text-xs h-7" 
+                        onClick={() => filterByUrgency(null)}
+                      >
+                        Todas
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant={(filterType === 'urgency' && urgencyFilter === 'Baixa') ? "default" : "outline"} 
+                        className="text-xs h-7 flex items-center gap-1" 
+                        onClick={() => filterByUrgency('Baixa')}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        Baixa
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant={(filterType === 'urgency' && urgencyFilter === 'Média') ? "default" : "outline"} 
+                        className="text-xs h-7 flex items-center gap-1" 
+                        onClick={() => filterByUrgency('Média')}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                        Média
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant={(filterType === 'urgency' && urgencyFilter === 'Alta') ? "default" : "outline"} 
+                        className="text-xs h-7 flex items-center gap-1" 
+                        onClick={() => filterByUrgency('Alta')}
+                      >
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        Alta
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -486,12 +558,33 @@ export function AppSidebar() {
                 
                 <div className="space-y-2">
                   <label htmlFor="jobPosition" className="text-sm font-medium">Vaga</label>
-                  <Input
-                    id="jobPosition"
-                    {...form.register('jobPosition')}
-                    placeholder="Vaga oferecida"
-                    className="w-full"
-                  />
+                  <Select
+                    value={form.watch('jobPosition') || ''}
+                    onValueChange={handleJobPositionChange}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a vaga" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Nenhuma vaga</SelectItem>
+                      {availableJobPositions.map(job => (
+                        <SelectItem key={job} value={job}>{job}</SelectItem>
+                      ))}
+                      <SelectItem value="custom">Personalizada...</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {customJobPosition !== '' && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        value={customJobPosition}
+                        onChange={(e) => setCustomJobPosition(e.target.value)}
+                        placeholder="Digite a vaga personalizada"
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={applyCustomJobPosition}>Aplicar</Button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
@@ -520,12 +613,13 @@ export function AppSidebar() {
                   </Select>
                 </div>
                 
-                <div className="flex items-center justify-between space-x-2">
+                <div className="space-y-2">
                   <label htmlFor="decorrer" className="text-sm font-medium">Em decorrer</label>
-                  <Switch
+                  <Textarea
                     id="decorrer"
-                    checked={form.watch('inProgress')}
-                    onCheckedChange={(checked) => form.setValue('inProgress', checked)}
+                    {...form.register('inProgress')}
+                    placeholder="Detalhes sobre o status em decorrer..."
+                    className="w-full"
                   />
                 </div>
               </div>

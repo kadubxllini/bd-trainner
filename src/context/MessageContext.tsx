@@ -24,6 +24,7 @@ interface MessageContextProps {
   addCompanyContact: (companyId: string, name: string) => Promise<void>;
   deleteCompanyContact: (contactId: string) => Promise<void>;
   isLoading: boolean;
+  availableJobPositions: string[];
 }
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
@@ -40,6 +41,30 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
+  const [availableJobPositions, setAvailableJobPositions] = useState<string[]>([]);
+  
+  // Fetch predefined job positions
+  useEffect(() => {
+    const fetchJobPositions = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('job_positions')
+        .select('title')
+        .order('title', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching job positions:', error);
+        return;
+      }
+      
+      if (data) {
+        setAvailableJobPositions(data.map(job => job.title));
+      }
+    };
+    
+    fetchJobPositions();
+  }, [user]);
   
   const { 
     data: companies = [], 
@@ -70,7 +95,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             
           const jobPosition = companyDetailsData?.job_position || null;
           const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
-          const inProgress = companyDetailsData?.in_progress || false;
+          const inProgress = companyDetailsData?.in_progress || null;
           
           const { data: emailsData, error: emailsError } = await supabase
             .from('company_emails')
@@ -103,7 +128,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             id: company.id,
             name: company.name,
             jobPosition: jobPosition,
-            urgency: urgency,
+            urgency: urgency as UrgencyLevel,
             inProgress: inProgress,
             emails: emailsData?.map(email => ({
               id: email.id,
@@ -533,7 +558,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteCompanyPhone,
         addCompanyContact,
         deleteCompanyContact,
-        isLoading: isLoadingCompanies || isLoadingMessages
+        isLoading: isLoadingCompanies || isLoadingMessages,
+        availableJobPositions
       }}
     >
       {children}

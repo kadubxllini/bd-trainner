@@ -15,8 +15,11 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          in_progress: string | null
+          job_position: string | null
           name: string
           phone: string | null
+          urgency: string | null
           user_id: string
         }
         Insert: {
@@ -24,8 +27,11 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          in_progress?: string | null
+          job_position?: string | null
           name: string
           phone?: string | null
+          urgency?: string | null
           user_id: string
         }
         Update: {
@@ -33,8 +39,11 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          in_progress?: string | null
+          job_position?: string | null
           name?: string
           phone?: string | null
+          urgency?: string | null
           user_id?: string
         }
         Relationships: []
@@ -131,6 +140,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      job_positions: {
+        Row: {
+          created_at: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {

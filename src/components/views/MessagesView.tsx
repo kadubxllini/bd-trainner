@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -89,11 +88,15 @@ const MessagesView = () => {
       
       // Use the selected date for the message timestamp
       const customTimestamp = new Date(messageDate);
+      
       // Set hours, minutes, seconds from current time
       const now = new Date();
       customTimestamp.setHours(now.getHours());
       customTimestamp.setMinutes(now.getMinutes());
       customTimestamp.setSeconds(now.getSeconds());
+      customTimestamp.setMilliseconds(now.getMilliseconds());
+      
+      console.log('Sending message with timestamp:', customTimestamp.toISOString());
       
       await addMessage(newMessage, fileAttachment, customTimestamp.getTime());
       setNewMessage('');
