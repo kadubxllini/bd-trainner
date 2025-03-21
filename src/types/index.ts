@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   content: string;
@@ -8,7 +7,19 @@ export interface Message {
     url: string;
     type: string;
   };
-  theme?: Theme;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  jobPosition: string | null;
+  urgency: UrgencyLevel;
+  inProgress: string | null;
+  emails: CompanyEmail[];
+  phones: CompanyPhone[];
+  contacts: CompanyContact[];
+  inProgressStates: InProgressState[];
+  messages: Message[];
 }
 
 export interface CompanyEmail {
@@ -28,23 +39,9 @@ export interface CompanyContact {
   name: string;
 }
 
+export type UrgencyLevel = 'low' | 'medium' | 'high';
+
 export interface InProgressState {
   id: string;
   description: string;
 }
-
-export interface Company {
-  id: string;
-  name: string;
-  emails: CompanyEmail[];
-  phones: CompanyPhone[];
-  contacts: CompanyContact[];
-  messages: Message[];
-  inProgressStates: InProgressState[];
-  inProgress?: string;
-  jobPosition?: string;
-  urgency?: UrgencyLevel;
-}
-
-export type Theme = 'Trabalho' | 'Saúde' | 'Pessoal';
-export type UrgencyLevel = 'Baixa' | 'Média' | 'Alta';

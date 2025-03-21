@@ -112,6 +112,35 @@ export type Database = {
           },
         ]
       }
+      company_in_progress: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description: string
+          id?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_in_progress_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_phones: {
         Row: {
           company_id: string
@@ -140,6 +169,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      in_progress_states: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+        }
+        Relationships: []
       }
       job_positions: {
         Row: {

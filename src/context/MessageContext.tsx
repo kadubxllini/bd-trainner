@@ -76,18 +76,22 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const fetchInProgressStates = async () => {
       if (!user) return;
       
-      const { data, error } = await supabase
-        .from('in_progress_states')
-        .select('description')
-        .order('description', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching in progress states:', error);
-        return;
-      }
-      
-      if (data) {
-        setAvailableInProgressStates(data.map(state => state.description));
+      try {
+        const { data, error } = await supabase
+          .from('in_progress_states')
+          .select('description')
+          .order('description', { ascending: true });
+        
+        if (error) {
+          console.error('Error fetching in progress states:', error);
+          return;
+        }
+        
+        if (data) {
+          setAvailableInProgressStates(data.map(state => state.description));
+        }
+      } catch (e) {
+        console.error('Exception fetching in progress states:', e);
       }
     };
     
@@ -150,6 +154,22 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
           const inProgress = companyDetailsData?.in_progress || null;
           
+          let inProgressStatesData = [];
+          try {
+            const { data: inProgressStatesResult, error: inProgressStatesError } = await supabase
+              .from('company_in_progress')
+              .select('*')
+              .eq('company_id', company.id);
+            
+            if (inProgressStatesError) {
+              console.error('Error fetching in progress states:', inProgressStatesError);
+            } else {
+              inProgressStatesData = inProgressStatesResult || [];
+            }
+          } catch (e) {
+            console.error('Exception fetching company in progress states:', e);
+          }
+          
           const { data: emailsData, error: emailsError } = await supabase
             .from('company_emails')
             .select('*')
@@ -177,15 +197,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.error('Error fetching contacts:', contactsError);
           }
 
-          const { data: inProgressStatesData, error: inProgressStatesError } = await supabase
-            .from('company_in_progress')
-            .select('*')
-            .eq('company_id', company.id);
-          
-          if (inProgressStatesError) {
-            console.error('Error fetching in progress states:', inProgressStatesError);
-          }
-          
           return {
             id: company.id,
             name: company.name,
@@ -686,7 +697,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addInProgressStateMutation = useMutation({
     mutationFn: async (description: string) => {
-      return await addInProgressStateToDatabase(description);
+      try {
+        return await addInProgressStateToDatabase(description);
+      } catch (e) {
+        console.error('Exception adding in progress state:', e);
+        throw e;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
@@ -699,12 +715,17 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteInProgressStateMutation = useMutation({
     mutationFn: async (description: string) => {
-      const { error } = await supabase
-        .from('in_progress_states')
-        .delete()
-        .eq('description', description);
-      
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('in_progress_states')
+          .delete()
+          .eq('description', description);
+        
+        if (error) throw error;
+      } catch (e) {
+        console.error('Exception deleting in progress state:', e);
+        throw e;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
@@ -717,11 +738,16 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addCompanyInProgressStateMutation = useMutation({
     mutationFn: async ({ companyId, description }: { companyId: string, description: string }) => {
-      const { error } = await supabase
-        .from('company_in_progress')
-        .insert({ company_id: companyId, description });
-      
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('company_in_progress')
+          .insert({ company_id: companyId, description });
+        
+        if (error) throw error;
+      } catch (e) {
+        console.error('Exception adding company in progress state:', e);
+        throw e;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
@@ -734,12 +760,17 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteCompanyInProgressStateMutation = useMutation({
     mutationFn: async ({ companyId, stateId }: { companyId: string, stateId: string }) => {
-      const { error } = await supabase
-        .from('company_in_progress')
-        .delete()
-        .eq('id', stateId);
-      
-      if (error) throw error;
+      try {
+        const { error } = await supabase
+          .from('company_in_progress')
+          .delete()
+          .eq('id', stateId);
+        
+        if (error) throw error;
+      } catch (e) {
+        console.error('Exception deleting company in progress state:', e);
+        throw e;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
@@ -751,41 +782,50 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const addInProgressStateToDatabase = async (description: string) => {
-    const { data: existingState } = await supabase
-      .from('in_progress_states')
-      .select('*')
-      .eq('description', description)
-      .single();
+    try {
+      const { data: existingState } = await supabase
+        .from('in_progress_states')
+        .select('*')
+        .eq('description', description)
+        .single();
 
-    if (existingState) {
-      return existingState;
+      if (existingState) {
+        return existingState;
+      }
+
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .insert({ description })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.error('Exception in addInProgressStateToDatabase:', e);
+      throw e;
     }
-
-    const { data, error } = await supabase
-      .from('in_progress_states')
-      .insert({ description })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
   };
 
   const refreshInProgressStates = async () => {
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('in_progress_states')
-      .select('description')
-      .order('description', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching in progress states:', error);
-      return;
-    }
-    
-    if (data) {
-      setAvailableInProgressStates(data.map(state => state.description));
+    try {
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .select('description')
+        .order('description', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching in progress states:', error);
+        return;
+      }
+      
+      if (data) {
+        setAvailableInProgressStates(data.map(state => state.description));
+      }
+    } catch (e) {
+      console.error('Exception in refreshInProgressStates:', e);
     }
   };
 
