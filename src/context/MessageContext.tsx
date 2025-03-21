@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from '@/types';
+import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -27,6 +26,11 @@ interface MessageContextProps {
   deleteJobPosition: (title: string) => Promise<void>;
   isLoading: boolean;
   availableJobPositions: string[];
+  availableInProgressStates: string[];
+  addInProgressState: (description: string) => Promise<void>;
+  deleteInProgressState: (description: string) => Promise<void>;
+  addCompanyInProgressState: (companyId: string, description: string) => Promise<void>;
+  deleteCompanyInProgressState: (companyId: string, stateId: string) => Promise<void>;
 }
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
@@ -44,8 +48,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const queryClient = useQueryClient();
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [availableJobPositions, setAvailableJobPositions] = useState<string[]>([]);
-  
-  // Fetch predefined job positions
+  const [availableInProgressStates, setAvailableInProgressStates] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchJobPositions = async () => {
       if (!user) return;
@@ -67,76 +71,54 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     fetchJobPositions();
   }, [user]);
-  
-  // Adicionar vagas de emprego comuns
+
   useEffect(() => {
-    const addDefaultJobPositions = async () => {
-      if (!user || availableJobPositions.length > 0) return;
+    const fetchInProgressStates = async () => {
+      if (!user) return;
       
-      const defaultPositions = [
-        "Desenvolvedor Front-end",
-        "Desenvolvedor Back-end",
-        "Desenvolvedor Full-stack",
-        "Analista de Sistemas",
-        "Analista de Dados",
-        "Cientista de Dados",
-        "Gerente de Projetos",
-        "Designer UI/UX",
-        "Engenheiro de Software",
-        "DevOps Engineer",
-        "QA Tester",
-        "Analista de QA",
-        "Scrum Master",
-        "Product Owner",
-        "Analista de Negócios",
-        "Analista de Marketing Digital",
-        "Social Media Manager",
-        "Customer Success",
-        "Administrador de Redes",
-        "Administrador de Sistemas",
-        "Técnico de Suporte",
-        "Analista de Suporte",
-        "Assistente Administrativo",
-        "Analista de RH",
-        "Recrutador",
-        "Analista Financeiro",
-        "Contador",
-        "Advogado",
-        "Assistente Jurídico",
-        "Vendedor",
-        "Representante Comercial",
-        "Gerente de Vendas",
-        "Auxiliar de Produção",
-        "Operador de Máquinas",
-        "Motorista",
-        "Entregador",
-        "Recepcionista",
-        "Atendente de Loja",
-        "Operador de Caixa",
-        "Garçom/Garçonete",
-        "Cozinheiro",
-        "Auxiliar de Cozinha",
-        "Professor",
-        "Instrutor",
-        "Médico",
-        "Enfermeiro",
-        "Técnico de Enfermagem",
-        "Fisioterapeuta",
-        "Psicólogo",
-        "Nutricionista",
-        "Arquiteto",
-        "Engenheiro Civil"
-      ];
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .select('description')
+        .order('description', { ascending: true });
       
-      for (const position of defaultPositions) {
-        await addJobPositionToDatabase(position);
+      if (error) {
+        console.error('Error fetching in progress states:', error);
+        return;
       }
       
-      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+      if (data) {
+        setAvailableInProgressStates(data.map(state => state.description));
+      }
     };
     
-    addDefaultJobPositions();
-  }, [user, availableJobPositions.length]);
+    fetchInProgressStates();
+  }, [user]);
+  
+  useEffect(() => {
+    const addDefaultInProgressStates = async () => {
+      if (!user || availableInProgressStates.length > 0) return;
+      
+      const defaultStates = [
+        "Aguardando resposta",
+        "Em negociação",
+        "Entrevista marcada",
+        "Entrevista técnica",
+        "Proposta enviada",
+        "Aguardando feedback",
+        "Contrato em análise",
+        "Finalizado",
+        "Recusado"
+      ];
+      
+      for (const state of defaultStates) {
+        await addInProgressStateToDatabase(state);
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+    };
+    
+    addDefaultInProgressStates();
+  }, [user, availableInProgressStates.length]);
   
   const { 
     data: companies = [], 
@@ -158,7 +140,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const companiesWithDetails = await Promise.all(
         companiesData.map(async (company) => {
-          // Fetch additional company details
           const { data: companyDetailsData, error: companyDetailsError } = await supabase
             .from('companies')
             .select('job_position, urgency, in_progress')
@@ -195,6 +176,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (contactsError) {
             console.error('Error fetching contacts:', contactsError);
           }
+
+          const { data: inProgressStatesData, error: inProgressStatesError } = await supabase
+            .from('company_in_progress')
+            .select('*')
+            .eq('company_id', company.id);
+          
+          if (inProgressStatesError) {
+            console.error('Error fetching in progress states:', inProgressStatesError);
+          }
           
           return {
             id: company.id,
@@ -215,6 +205,10 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             contacts: contactsData?.map(contact => ({
               id: contact.id,
               name: contact.name,
+            })) || [],
+            inProgressStates: inProgressStatesData?.map(state => ({
+              id: state.id,
+              description: state.description,
             })) || [],
             messages: []
           };
@@ -460,7 +454,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       fileAttachment?: Message['fileAttachment'],
       customTimestamp?: number
     }) => {
-      if (!user || !activeCompany) throw new Error("Empresa não selecionada");
+      if (!user || !activeCompany) return;
       
       let fileData = null;
       
@@ -568,7 +562,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const addJobPositionToDatabase = async (title: string) => {
-    // Verificar se a vaga já existe
     const { data: existingPosition } = await supabase
       .from('job_positions')
       .select('*')
@@ -691,6 +684,129 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await deleteJobPositionMutation.mutateAsync(title);
   };
 
+  const addInProgressStateMutation = useMutation({
+    mutationFn: async (description: string) => {
+      return await addInProgressStateToDatabase(description);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      refreshInProgressStates();
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar estado: ${error.message}`);
+    }
+  });
+
+  const deleteInProgressStateMutation = useMutation({
+    mutationFn: async (description: string) => {
+      const { error } = await supabase
+        .from('in_progress_states')
+        .delete()
+        .eq('description', description);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      refreshInProgressStates();
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover estado: ${error.message}`);
+    }
+  });
+
+  const addCompanyInProgressStateMutation = useMutation({
+    mutationFn: async ({ companyId, description }: { companyId: string, description: string }) => {
+      const { error } = await supabase
+        .from('company_in_progress')
+        .insert({ company_id: companyId, description });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Estado adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar estado: ${error.message}`);
+    }
+  });
+
+  const deleteCompanyInProgressStateMutation = useMutation({
+    mutationFn: async ({ companyId, stateId }: { companyId: string, stateId: string }) => {
+      const { error } = await supabase
+        .from('company_in_progress')
+        .delete()
+        .eq('id', stateId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Estado removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover estado: ${error.message}`);
+    }
+  });
+
+  const addInProgressStateToDatabase = async (description: string) => {
+    const { data: existingState } = await supabase
+      .from('in_progress_states')
+      .select('*')
+      .eq('description', description)
+      .single();
+
+    if (existingState) {
+      return existingState;
+    }
+
+    const { data, error } = await supabase
+      .from('in_progress_states')
+      .insert({ description })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const refreshInProgressStates = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('in_progress_states')
+      .select('description')
+      .order('description', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching in progress states:', error);
+      return;
+    }
+    
+    if (data) {
+      setAvailableInProgressStates(data.map(state => state.description));
+    }
+  };
+
+  const addInProgressState = async (description: string) => {
+    if (!description.trim()) return;
+    await addInProgressStateMutation.mutateAsync(description);
+  };
+
+  const deleteInProgressState = async (description: string) => {
+    await deleteInProgressStateMutation.mutateAsync(description);
+  };
+
+  const addCompanyInProgressState = async (companyId: string, description: string) => {
+    if (!description.trim()) return;
+    await addCompanyInProgressStateMutation.mutateAsync({ companyId, description });
+  };
+
+  const deleteCompanyInProgressState = async (companyId: string, stateId: string) => {
+    await deleteCompanyInProgressStateMutation.mutateAsync({ companyId, stateId });
+  };
+
   return (
     <MessageContext.Provider
       value={{
@@ -713,7 +829,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         addJobPosition,
         deleteJobPosition,
         isLoading: isLoadingCompanies || isLoadingMessages,
-        availableJobPositions
+        availableJobPositions,
+        availableInProgressStates,
+        addInProgressState,
+        deleteInProgressState,
+        addCompanyInProgressState,
+        deleteCompanyInProgressState
       }}
     >
       {children}
