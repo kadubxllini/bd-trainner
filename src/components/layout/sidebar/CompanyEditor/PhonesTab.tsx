@@ -3,6 +3,9 @@ import { Company } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone, Trash } from "lucide-react";
+import { useState } from "react";
+import { z } from "zod";
+import { toast } from "sonner";
 
 interface PhonesTabProps {
   company: Company;
@@ -19,6 +22,24 @@ export function PhonesTab({
   onAddPhone,
   onDeletePhone
 }: PhonesTabProps) {
+  // Phone validation
+  const handleAddPhone = () => {
+    // Basic phone validation
+    const phoneRegex = /^[0-9\s\(\)\-\+]+$/;
+    
+    if (!newPhone.trim()) {
+      toast.error("Digite um número de telefone");
+      return;
+    }
+
+    if (!phoneRegex.test(newPhone)) {
+      toast.error("Formato de telefone inválido");
+      return;
+    }
+
+    onAddPhone();
+  }
+
   return (
     <div className="space-y-4">
       {company.phones.length > 0 ? (
@@ -59,7 +80,7 @@ export function PhonesTab({
             className="w-full"
           />
           
-          <Button className="w-full" onClick={onAddPhone}>
+          <Button className="w-full" onClick={handleAddPhone}>
             Adicionar telefone
           </Button>
         </div>
