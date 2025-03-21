@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -373,16 +372,26 @@ export function AppSidebar() {
       case 'Baixa': return 'bg-green-100 text-green-800';
       case 'Média': return 'bg-yellow-100 text-yellow-800';
       case 'Alta': return 'bg-red-100 text-red-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'high': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
     switch(urgency) {
-      case 'Baixa': return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
-      case 'Média': return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
-      case 'Alta': return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
-      default: return null;
+      case 'Baixa': 
+      case 'low':
+        return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
+      case 'Média':
+      case 'medium':
+        return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
+      case 'Alta':
+      case 'high':
+        return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
+      default: 
+        return null;
     }
   };
 
@@ -565,7 +574,7 @@ export function AppSidebar() {
                           Decorrer
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2 bg-background" align="start">
+                      <PopoverContent className="w-auto p-2 bg-background z-50" align="start">
                         <div className="space-y-2">
                           <p className="text-xs font-medium">Estados em decorrer:</p>
                           <div className="flex flex-col space-y-1">
@@ -836,7 +845,7 @@ export function AppSidebar() {
           if (!open) closeEditDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md bg-background">
+        <DialogContent className="sm:max-w-md bg-background z-50">
           <DialogHeader>
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
@@ -904,217 +913,4 @@ export function AppSidebar() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Baixa" className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>
-                        Baixa
-                      </SelectItem>
-                      <SelectItem value="Média" className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
-                        Média
-                      </SelectItem>
-                      <SelectItem value="Alta" className="flex items-center">
-                        <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
-                        Alta
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="inProgress" className="text-sm font-medium">Em decorrer</label>
-                  <Textarea
-                    id="inProgress"
-                    {...form.register('inProgress')}
-                    placeholder="Descreva o que está em decorrer"
-                    className="min-h-[80px]"
-                  />
-                </div>
-              </div>
-              
-              <div className="mt-6 flex justify-end">
-                <Button onClick={saveEditedCompany}>Salvar</Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="emails" className="pt-4">
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="Novo e-mail"
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddEmail}>Adicionar</Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">E-mails</h3>
-                  {editingCompany && editingCompany.emails.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {editingCompany && editingCompany.emails.map(email => (
-                        <div key={email.id} className="flex justify-between items-center p-2 border rounded-md">
-                          <div className="flex items-center">
-                            <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{email.email}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyEmail(email.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="phones" className="pt-4">
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
-                    placeholder="Novo telefone"
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddPhone}>Adicionar</Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Telefones</h3>
-                  {editingCompany && editingCompany.phones.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum telefone cadastrado</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {editingCompany && editingCompany.phones.map(phone => (
-                        <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md">
-                          <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{phone.phone}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyPhone(phone.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="contacts" className="pt-4">
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={newContact}
-                    onChange={(e) => setNewContact(e.target.value)}
-                    placeholder="Novo contato"
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddContact}>Adicionar</Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Contatos</h3>
-                  {editingCompany && editingCompany.contacts.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhum contato cadastrado</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {editingCompany && editingCompany.contacts.map(contact => (
-                        <div key={contact.id} className="flex justify-between items-center p-2 border rounded-md">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{contact.name}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyContact(contact.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="inprogress" className="pt-4">
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={newInProgressState}
-                    onChange={(e) => setNewInProgressState(e.target.value)}
-                    placeholder="Novo estado"
-                    className="flex-1"
-                  />
-                  <Button onClick={handleAddInProgressState}>Adicionar</Button>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Estados em decorrer</h3>
-                  {editingCompany && (!editingCompany.inProgressStates || editingCompany.inProgressStates.length === 0) ? (
-                    <p className="text-sm text-muted-foreground">Nenhum estado cadastrado</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {editingCompany && editingCompany.inProgressStates && editingCompany.inProgressStates.map(state => (
-                        <div key={state.id} className="flex justify-between items-center p-2 border rounded-md">
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                            <span>{state.description}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteInProgressState(state.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      {/* Alert dialog para confirmar exclusão */}
-      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Todos os dados da empresa {companyToDelete?.name} serão excluídos permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCompany} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Sidebar>
-  );
-}
+                        <div className="w-2 h-2 rounded-full bg

@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   content: string;
@@ -39,7 +40,7 @@ export interface CompanyContact {
   name: string;
 }
 
-export type UrgencyLevel = 'low' | 'medium' | 'high';
+export type UrgencyLevel = 'low' | 'medium' | 'high' | 'Baixa' | 'Média' | 'Alta';
 
 export interface InProgressState {
   id: string;

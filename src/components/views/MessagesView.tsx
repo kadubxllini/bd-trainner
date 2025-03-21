@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -50,7 +49,9 @@ const MessagesView = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages, selectedDate, showAllMessages]);
 
   const handleSendMessage = async () => {
@@ -202,7 +203,7 @@ const MessagesView = () => {
     
   const sortedDates = showAllMessages
     ? Object.keys(groupedMessages).sort((a, b) => 
-        new Date(b).getTime() - new Date(a).getTime()
+        new Date(a).getTime() - new Date(b).getTime()
       )
     : [];
 
@@ -273,51 +274,12 @@ const MessagesView = () => {
                     </div>
                     <div className="space-y-4">
                       {groupedMessages[date].map((message) => (
-                        <ContextMenu key={message.id}>
-                          <ContextMenuTrigger>
-                            <div className="group animate-slide-up relative">
-                              <div className="message-bubble message-bubble-sent">
-                                <p>{message.content}</p>
-                                
-                                {message.fileAttachment && (
-                                  <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
-                                    <FileText className="h-4 w-4" />
-                                    <a 
-                                      href={message.fileAttachment.url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-sm text-primary hover:underline"
-                                    >
-                                      {message.fileAttachment.name}
-                                    </a>
-                                  </div>
-                                )}
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {formatMessageTime(message.timestamp)}
-                                </div>
-                              </div>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleDeleteMessage(message.id)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </ContextMenuTrigger>
-                          
-                          <ContextMenuContent>
-                            <ContextMenuItem onClick={() => startEditingMessage(message)}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Editar mensagem
-                            </ContextMenuItem>
-                            <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
-                              <Trash className="h-4 w-4 mr-2" />
-                              Excluir mensagem
-                            </ContextMenuItem>
-                          </ContextMenuContent>
-                        </ContextMenu>
+                        <MessageItem 
+                          key={message.id} 
+                          message={message} 
+                          onDelete={handleDeleteMessage}
+                          onEdit={startEditingMessage}
+                        />
                       ))}
                     </div>
                   </div>
@@ -332,51 +294,12 @@ const MessagesView = () => {
               </div>
             ) : (
               filteredMessages.map((message) => (
-                <ContextMenu key={message.id}>
-                  <ContextMenuTrigger>
-                    <div className="group animate-slide-up relative">
-                      <div className="message-bubble message-bubble-sent">
-                        <p>{message.content}</p>
-                        
-                        {message.fileAttachment && (
-                          <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
-                            <FileText className="h-4 w-4" />
-                            <a 
-                              href={message.fileAttachment.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              {message.fileAttachment.name}
-                            </a>
-                          </div>
-                        )}
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {formatMessageTime(message.timestamp)}
-                        </div>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDeleteMessage(message.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </ContextMenuTrigger>
-                  
-                  <ContextMenuContent>
-                    <ContextMenuItem onClick={() => startEditingMessage(message)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar mensagem
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => handleDeleteMessage(message.id)} className="text-destructive">
-                      <Trash className="h-4 w-4 mr-2" />
-                      Excluir mensagem
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
+                <MessageItem 
+                  key={message.id} 
+                  message={message} 
+                  onDelete={handleDeleteMessage}
+                  onEdit={startEditingMessage}
+                />
               ))
             )}
           </div>
@@ -476,6 +399,62 @@ const MessagesView = () => {
         </Dialog>
       </div>
     </div>
+  );
+};
+
+interface MessageItemProps {
+  message: Message;
+  onDelete: (id: string) => void;
+  onEdit: (message: Message) => void;
+}
+
+const MessageItem: React.FC<MessageItemProps> = ({ message, onDelete, onEdit }) => {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <div className="group animate-slide-up relative">
+          <div className="message-bubble message-bubble-sent">
+            <p>{message.content}</p>
+            
+            {message.fileAttachment && (
+              <div className="mt-2 p-2 bg-secondary/20 rounded flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <a 
+                  href={message.fileAttachment.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  {message.fileAttachment.name}
+                </a>
+              </div>
+            )}
+            <div className="text-xs text-muted-foreground mt-1">
+              {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
+            </div>
+          </div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => onDelete(message.id)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </ContextMenuTrigger>
+      
+      <ContextMenuContent>
+        <ContextMenuItem onClick={() => onEdit(message)}>
+          <Pencil className="h-4 w-4 mr-2" />
+          Editar mensagem
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => onDelete(message.id)} className="text-destructive">
+          <Trash className="h-4 w-4 mr-2" />
+          Excluir mensagem
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 
