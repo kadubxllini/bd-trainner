@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -74,7 +73,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from "@/types";
+import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from "@/types";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -98,7 +97,12 @@ export function AppSidebar() {
     isLoading,
     availableJobPositions,
     addJobPosition,
-    deleteJobPosition
+    deleteJobPosition,
+    availableInProgressStates,
+    addInProgressState,
+    deleteInProgressState,
+    addCompanyInProgressState,
+    deleteCompanyInProgressState
   } = useMessages();
   
   const { user, signOut } = useAuth();
@@ -123,7 +127,10 @@ export function AppSidebar() {
   const [customJobPosition, setCustomJobPosition] = useState('');
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
+  const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
+  const [newInProgressState, setNewInProgressState] = useState('');
   const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
+  const [showInProgressManager, setShowInProgressManager] = useState(false);
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -149,7 +156,10 @@ export function AppSidebar() {
           filtered = filtered.filter(company => company.urgency);
         }
       } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.inProgress && company.inProgress.trim() !== '');
+        filtered = filtered.filter(company => 
+          company.inProgress && company.inProgress.trim() !== '' || 
+          (company.inProgressStates && company.inProgressStates.length > 0)
+        );
       }
       
       setFilteredCompanies(filtered);
@@ -184,7 +194,10 @@ export function AppSidebar() {
           filtered = filtered.filter(company => company.urgency);
         }
       } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => company.inProgress && company.inProgress.trim() !== '');
+        filtered = filtered.filter(company => 
+          company.inProgress && company.inProgress.trim() !== '' || 
+          (company.inProgressStates && company.inProgressStates.length > 0)
+        );
       }
       
       setFilteredCompanies(filtered);
@@ -328,6 +341,32 @@ export function AppSidebar() {
     toast.success(`Vaga "${jobPosition}" removida`);
   };
 
+  const handleAddInProgressState = () => {
+    if (editingCompany && newInProgressState.trim()) {
+      addCompanyInProgressState(editingCompany.id, newInProgressState);
+      setNewInProgressState('');
+    }
+  };
+
+  const handleAddGlobalInProgressState = () => {
+    if (newGlobalInProgressState.trim()) {
+      addInProgressState(newGlobalInProgressState);
+      setNewGlobalInProgressState('');
+      toast.success(`Estado "${newGlobalInProgressState}" adicionado`);
+    }
+  };
+
+  const handleDeleteInProgressState = (stateId: string) => {
+    if (editingCompany) {
+      deleteCompanyInProgressState(editingCompany.id, stateId);
+    }
+  };
+
+  const handleDeleteGlobalInProgressState = (state: string) => {
+    deleteInProgressState(state);
+    toast.success(`Estado "${state}" removido`);
+  };
+
   const getUrgencyColor = (urgency?: UrgencyLevel) => {
     switch(urgency) {
       case 'Baixa': return 'bg-green-100 text-green-800';
@@ -386,6 +425,14 @@ export function AppSidebar() {
                 >
                   <BriefcaseBusiness className="h-4 w-4" />
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowInProgressManager(true)} 
+                  className="h-6 px-2"
+                >
+                  <Clock className="h-4 w-4" />
+                </Button>
                 {user && (
                   <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
                     <LogOut className="h-4 w-4" />
@@ -424,7 +471,7 @@ export function AppSidebar() {
                           Vaga
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="start">
+                      <PopoverContent className="w-auto p-2 bg-background" align="start">
                         <div className="space-y-2">
                           <p className="text-xs font-medium">Selecione uma vaga:</p>
                           <div className="flex flex-col space-y-1">
@@ -457,7 +504,7 @@ export function AppSidebar() {
                           Urgência
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="start">
+                      <PopoverContent className="w-auto p-2 bg-background" align="start">
                         <div className="space-y-2">
                           <p className="text-xs font-medium">Selecione o nível de urgência:</p>
                           <div className="flex flex-col space-y-1">
@@ -493,15 +540,46 @@ export function AppSidebar() {
                       </PopoverContent>
                     </Popover>
                     
-                    <Button 
-                      size="sm" 
-                      variant={filterType === 'inProgress' ? "default" : "outline"} 
-                      className="text-xs h-7 flex items-center gap-1" 
-                      onClick={filterByInProgress}
-                    >
-                      <Clock className="h-3 w-3" />
-                      Decorrer
-                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant={filterType === 'inProgress' ? "default" : "outline"} 
+                          className="text-xs h-7 flex items-center gap-1" 
+                        >
+                          <Clock className="h-3 w-3" />
+                          Decorrer
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2 bg-background" align="start">
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Estados em decorrer:</p>
+                          <div className="flex flex-col space-y-1">
+                            <ScrollArea className="h-[200px] pr-3">
+                              {availableInProgressStates.map(state => (
+                                <Button 
+                                  key={state}
+                                  size="sm" 
+                                  variant="outline"
+                                  className="text-xs h-7 justify-start w-full mb-1"
+                                  onClick={filterByInProgress}
+                                >
+                                  {state}
+                                </Button>
+                              ))}
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-xs h-7 justify-start w-full mb-1"
+                                onClick={filterByInProgress}
+                              >
+                                Qualquer estado
+                              </Button>
+                            </ScrollArea>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
               </div>
@@ -677,6 +755,65 @@ export function AppSidebar() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog para gerenciar estados "em decorrer" */}
+      <Dialog
+        open={showInProgressManager}
+        onOpenChange={setShowInProgressManager}
+      >
+        <DialogContent className="sm:max-w-md bg-background">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Estados em Decorrer</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova estados de "em decorrer" disponíveis para todas as empresas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Input
+                value={newGlobalInProgressState}
+                onChange={(e) => setNewGlobalInProgressState(e.target.value)}
+                placeholder="Novo estado"
+                className="flex-1"
+              />
+              <Button onClick={handleAddGlobalInProgressState}>Adicionar</Button>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Estados disponíveis</h3>
+              <ScrollArea className="h-[200px] pr-3">
+                {availableInProgressStates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum estado cadastrado</p>
+                ) : (
+                  <div className="space-y-2">
+                    {availableInProgressStates.map(state => (
+                      <div key={state} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <span>{state}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteGlobalInProgressState(state)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowInProgressManager(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Dialog para editar empresa */}
       <Dialog 
         open={!!editingCompany} 
@@ -695,6 +832,7 @@ export function AppSidebar() {
               <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
               <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
               <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
+              <TabsTrigger value="inprogress" className="flex-1">Decorrer</TabsTrigger>
             </TabsList>
             
             <TabsContent value="info" className="pt-4">
@@ -771,204 +909,3 @@ export function AppSidebar() {
                   <Textarea
                     id="decorrer"
                     {...form.register('inProgress')}
-                    placeholder="Detalhes sobre o status em decorrer..."
-                    className="w-full"
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="emails" className="pt-4 space-y-4">
-              <div className="space-y-2">
-                <Input
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="Novo e-mail"
-                  className="mb-2"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={newJobPosition}
-                    onChange={(e) => setNewJobPosition(e.target.value)}
-                    placeholder="Vaga"
-                    className="col-span-1"
-                  />
-                  <Select
-                    value={newUrgency}
-                    onValueChange={(value) => setNewUrgency(value as UrgencyLevel)}
-                  >
-                    <SelectTrigger className="col-span-1">
-                      <SelectValue placeholder="Urgência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Baixa">Baixa</SelectItem>
-                      <SelectItem value="Média">Média</SelectItem>
-                      <SelectItem value="Alta">Alta</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAddEmail} size="sm" className="w-full">Adicionar</Button>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">E-mails cadastrados</h3>
-                {editingCompany?.emails.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum e-mail cadastrado</p>
-                ) : (
-                  <ScrollArea className="h-[200px] pr-3">
-                    <div className="space-y-2">
-                      {editingCompany?.emails.map(item => (
-                        <div key={item.id} className="flex flex-col p-2 border rounded-md bg-secondary/20">
-                          <div className="flex justify-between items-start">
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{item.email}</span>
-                              </div>
-                              {item.jobPosition && (
-                                <div className="text-sm text-muted-foreground pl-6">
-                                  Vaga: {item.jobPosition}
-                                </div>
-                              )}
-                              {item.preference && (
-                                <div className="text-sm flex items-center pl-6">
-                                  {getUrgencyIndicator(item.preference as UrgencyLevel)}
-                                  <span className="text-muted-foreground">
-                                    Urgência: {item.preference}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => deleteCompanyEmail(item.id)} 
-                              className="h-7 w-7 hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="phones" className="pt-4 space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  placeholder="Novo telefone"
-                  className="flex-1"
-                />
-                <Button onClick={handleAddPhone} size="sm">Adicionar</Button>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Telefones cadastrados</h3>
-                {editingCompany?.phones.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum telefone cadastrado</p>
-                ) : (
-                  <ScrollArea className="h-[200px] pr-3">
-                    <div className="space-y-2">
-                      {editingCompany?.phones.map(item => (
-                        <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{item.phone}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => deleteCompanyPhone(item.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="contacts" className="pt-4 space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  value={newContact}
-                  onChange={(e) => setNewContact(e.target.value)}
-                  placeholder="Novo contato"
-                  className="flex-1"
-                />
-                <Button onClick={handleAddContact} size="sm">Adicionar</Button>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Contatos cadastrados</h3>
-                {editingCompany?.contacts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum contato cadastrado</p>
-                ) : (
-                  <ScrollArea className="h-[200px] pr-3">
-                    <div className="space-y-2">
-                      {editingCompany?.contacts.map(item => (
-                        <div key={item.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span>{item.name}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => deleteCompanyContact(item.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-          
-          <DialogFooter>
-            <Button variant="secondary" onClick={closeEditDialog}>
-              Cancelar
-            </Button>
-            <Button onClick={() => {
-              saveEditedCompany();
-              closeEditDialog();
-            }}>
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Alert Dialog para confirmar exclusão de empresa */}
-      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
-        <AlertDialogContent className="bg-background">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a empresa "{companyToDelete?.name}"? 
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCompany} className="bg-destructive text-destructive-foreground">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Sidebar>
-  );
-}

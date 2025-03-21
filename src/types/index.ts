@@ -28,6 +28,11 @@ export interface CompanyContact {
   name: string;
 }
 
+export interface InProgressState {
+  id: string;
+  description: string;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -35,6 +40,7 @@ export interface Company {
   phones: CompanyPhone[];
   contacts: CompanyContact[];
   messages: Message[];
+  inProgressStates: InProgressState[];
   inProgress?: string;
   jobPosition?: string;
   urgency?: UrgencyLevel;
