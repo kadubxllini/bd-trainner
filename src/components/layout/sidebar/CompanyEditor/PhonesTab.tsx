@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone, Trash } from "lucide-react";
 import { useState } from "react";
-import { z } from "zod";
 import { toast } from "sonner";
 
 interface PhonesTabProps {
@@ -42,7 +41,7 @@ export function PhonesTab({
 
   return (
     <div className="space-y-4">
-      {company.phones.length > 0 ? (
+      {company.phones && company.phones.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Telefones cadastrados</h3>
           <div className="space-y-2">
