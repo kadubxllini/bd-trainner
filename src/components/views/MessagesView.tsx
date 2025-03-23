@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format, startOfDay, parseISO } from 'date-fns';
+import { format, startOfDay, isEqual } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -183,7 +183,7 @@ const MessagesView = () => {
       const targetDate = startOfDay(selectedDate);
       const messageDateStart = startOfDay(messageDate);
       
-      return targetDate.getTime() === messageDateStart.getTime();
+      return isEqual(targetDate, messageDateStart);
     }
     
     return true;

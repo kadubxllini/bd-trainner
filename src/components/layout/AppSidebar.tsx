@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -78,7 +77,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
-import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
+import { InformationTab, InProgressTab } from "./sidebar/CompanyEditor";
 
 export function AppSidebar() {
   const { 
@@ -1034,51 +1033,13 @@ export function AppSidebar() {
               </TabsContent>
               
               <TabsContent value="inprogress" className="pt-4">
-                <div className="space-y-4">
-                  {editingCompany.inProgressStates && editingCompany.inProgressStates.length > 0 ? (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Estados em decorrer</h3>
-                      <div className="space-y-2">
-                        {editingCompany.inProgressStates.map((state) => (
-                          <div key={state.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>{state.description}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteInProgressState(state.id)} 
-                              className="h-7 w-7 hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      Nenhum estado em decorrer cadastrado
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-medium mb-2">Adicionar novo estado</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newInProgressState}
-                        onChange={(e) => setNewInProgressState(e.target.value)}
-                        placeholder="Descrição do estado"
-                        className="w-full"
-                      />
-                      
-                      <Button className="w-full" onClick={handleAddInProgressState}>
-                        Adicionar estado
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <InProgressTab
+                  company={editingCompany}
+                  newInProgressState={newInProgressState}
+                  setNewInProgressState={setNewInProgressState}
+                  onAddInProgressState={handleAddInProgressState}
+                  onDeleteInProgressState={handleDeleteInProgressState}
+                />
               </TabsContent>
             </Tabs>
           )}

@@ -19,7 +19,6 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   
   // Get dates with messages for highlighting in calendar
   const datesWithMessages = messages.reduce((dates: Date[], message) => {
-    // Fix: Don't add days to the date when processing
     const messageDate = new Date(message.timestamp);
     const formattedDate = new Date(
       messageDate.getFullYear(),
