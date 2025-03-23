@@ -132,14 +132,14 @@ export function EmailsTab({
           />
           
           <Select
-            value={newJobPosition}
+            value={newJobPosition || "none"}
             onValueChange={setNewJobPosition}
           >
             <SelectTrigger>
               <SelectValue placeholder="Vaga (opcional)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Nenhuma vaga</SelectItem>
+              <SelectItem value="none">Nenhuma vaga</SelectItem>
               {availableJobPositions.map(job => (
                 <SelectItem key={job} value={job}>{job}</SelectItem>
               ))}

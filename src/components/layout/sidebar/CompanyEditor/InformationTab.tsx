@@ -62,14 +62,14 @@ export function InformationTab({
       <div className="space-y-2">
         <label htmlFor="jobPosition" className="text-sm font-medium">Vaga</label>
         <Select
-          value={form.watch('jobPosition') || ''}
+          value={form.watch('jobPosition') || "none"}
           onValueChange={handleJobPositionChange}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione a vaga" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Nenhuma vaga</SelectItem>
+            <SelectItem value="none">Nenhuma vaga</SelectItem>
             {availableJobPositions.map(job => (
               <SelectItem key={job} value={job}>{job}</SelectItem>
             ))}
