@@ -19,7 +19,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface InformationTabProps {
   form: UseFormReturn<{
     name: string;
-    jobPositions: string[]; // Changed from jobPosition to jobPositions
+    jobPositions: string[];
     urgency: UrgencyLevel;
     inProgress: string;
   }>;

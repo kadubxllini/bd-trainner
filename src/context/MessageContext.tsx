@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from '@/types';
 import { toast } from 'sonner';
@@ -200,7 +201,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: company.id,
             name: company.name,
-            jobPosition: jobPosition,
+            jobPositions: jobPosition ? [jobPosition] : [], // Convert old jobPosition to array
             urgency: urgency as UrgencyLevel,
             inProgress: inProgress,
             emails: emailsData?.map(email => ({
@@ -297,7 +298,10 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updateData: any = {};
       
       if (data.name) updateData.name = data.name;
-      if (data.jobPosition !== undefined) updateData.job_position = data.jobPosition;
+      if (data.jobPositions !== undefined) {
+        // Store only the first job position in the old field for backward compatibility
+        updateData.job_position = data.jobPositions.length > 0 ? data.jobPositions[0] : null;
+      }
       if (data.urgency !== undefined) updateData.urgency = data.urgency;
       if (data.inProgress !== undefined) updateData.in_progress = data.inProgress;
       

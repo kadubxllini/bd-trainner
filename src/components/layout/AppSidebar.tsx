@@ -1,11 +1,9 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
   SidebarGroup, 
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarFooter,
   SidebarTrigger,
   useSidebar,
@@ -79,6 +77,8 @@ import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { CompanyList } from "./sidebar/CompanyList";
+import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
 
 export function AppSidebar() {
   const { 
@@ -136,7 +136,7 @@ export function AppSidebar() {
   const form = useForm({
     defaultValues: {
       name: '',
-      jobPosition: '',
+      jobPositions: [] as string[],
       urgency: 'Média' as UrgencyLevel,
       inProgress: ''
     }
@@ -148,7 +148,9 @@ export function AppSidebar() {
       
       // Apply filters
       if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
-        filtered = filtered.filter(company => company.jobPosition === jobPositionFilter);
+        filtered = filtered.filter(company => 
+          company.jobPositions.includes(jobPositionFilter)
+        );
       } else if (filterType === 'urgency' && filtered.length > 0) {
         if (urgencyFilter) {
           filtered = filtered.filter(company => company.urgency === urgencyFilter);
@@ -186,7 +188,9 @@ export function AppSidebar() {
       
       // Apply additional filters
       if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
-        filtered = filtered.filter(company => company.jobPosition === jobPositionFilter);
+        filtered = filtered.filter(company => 
+          company.jobPositions.includes(jobPositionFilter)
+        );
       } else if (filterType === 'urgency' && filtered.length > 0) {
         if (urgencyFilter) {
           filtered = filtered.filter(company => company.urgency === urgencyFilter);
@@ -216,7 +220,7 @@ export function AppSidebar() {
     setEditingCompany(company);
     form.reset({
       name: company.name,
-      jobPosition: company.jobPosition || '',
+      jobPositions: company.jobPositions || [],
       urgency: company.urgency || 'Média',
       inProgress: company.inProgress || ''
     });
@@ -229,7 +233,7 @@ export function AppSidebar() {
       if (formData.name.trim()) {
         updateCompany(editingCompany.id, { 
           name: formData.name,
-          jobPosition: formData.jobPosition || undefined,
+          jobPositions: formData.jobPositions,
           urgency: formData.urgency,
           inProgress: formData.inProgress || undefined
         });
@@ -316,14 +320,21 @@ export function AppSidebar() {
   const handleJobPositionChange = (value: string) => {
     if (value === 'custom') {
       setCustomJobPosition('');
-    } else {
-      form.setValue('jobPosition', value);
+    } else if (value !== 'none') {
+      // Add job position to the array if not already present
+      const currentPositions = form.getValues().jobPositions || [];
+      if (!currentPositions.includes(value)) {
+        form.setValue('jobPositions', [...currentPositions, value]);
+      }
     }
   };
 
   const applyCustomJobPosition = () => {
     if (customJobPosition.trim()) {
-      form.setValue('jobPosition', customJobPosition);
+      const currentPositions = form.getValues().jobPositions || [];
+      if (!currentPositions.includes(customJobPosition)) {
+        form.setValue('jobPositions', [...currentPositions, customJobPosition]);
+      }
       setCustomJobPosition('');
     }
   };
@@ -619,96 +630,43 @@ export function AppSidebar() {
               </div>
             )}
 
-            <SidebarMenu className="max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin">
-              {filteredCompanies.map((company) => (
-                <ContextMenu key={company.id}>
-                  <ContextMenuTrigger>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton 
-                        onClick={() => handleCompanySelect(company.id)}
-                        className={`${
-                          activeCompany?.id === company.id 
-                            ? 'bg-primary/20 text-primary-foreground' 
-                            : 'hover:bg-secondary'
-                        } transition-all duration-200`}
-                      >
-                        <div className="flex items-center w-full">
-                          <Building className="w-5 h-5 mr-2 flex-shrink-0" />
-                          <div className="flex flex-col flex-1 min-w-0">
-                            <div className="flex items-center">
-                              <span className="truncate">{company.name}</span>
-                              {company.inProgress && (
-                                <span className="ml-2 px-1.5 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 flex items-center">
-                                  <Clock className="w-3 h-3 mr-1" />
-                                  <span className="truncate">Decorrer</span>
-                                </span>
-                              )}
-                            </div>
-                            {company.jobPosition && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                Vaga: {company.jobPosition}
-                              </span>
-                            )}
-                            {company.urgency && (
-                              <div className="flex items-center text-xs text-muted-foreground">
-                                {getUrgencyIndicator(company.urgency)}
-                                <span className="truncate">
-                                  Urgência: {company.urgency}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem onClick={() => startEditingCompany(company)}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Editar empresa
-                    </ContextMenuItem>
-                    <ContextMenuItem 
-                      onClick={() => handleDeleteCompany(company)} 
-                      className="text-destructive"
-                      disabled={companies.length <= 1}
-                    >
-                      <Trash className="h-4 w-4 mr-2" />
-                      Excluir empresa
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              ))}
+            <CompanyList
+              companies={filteredCompanies}
+              activeCompany={activeCompany}
+              onCompanySelect={handleCompanySelect}
+              onEditCompany={startEditingCompany}
+              onDeleteCompany={handleDeleteCompany}
+            />
 
-              {showNewCompanyForm ? (
-                <div className="p-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newCompanyName}
-                      onChange={(e) => setNewCompanyName(e.target.value)}
-                      placeholder="Nome da empresa"
-                      className="h-9 text-sm"
-                    />
-                    <Button 
-                      size="sm" 
-                      onClick={handleCreateCompany}
-                      className="bg-primary/80 hover:bg-primary"
-                    >
-                      Criar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <SidebarMenuItem>
-                  <SidebarMenuButton 
-                    onClick={() => setShowNewCompanyForm(true)}
-                    className="hover:bg-secondary transition-all duration-200"
+            {showNewCompanyForm ? (
+              <div className="p-2">
+                <div className="flex gap-2">
+                  <Input
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder="Nome da empresa"
+                    className="h-9 text-sm"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={handleCreateCompany}
+                    className="bg-primary/80 hover:bg-primary"
                   >
-                    <Plus className="w-5 h-5 mr-2" />
-                    <span>Nova Empresa</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
+                    Criar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-2">
+                <Button 
+                  className="w-full"
+                  size="sm"
+                  onClick={() => setShowNewCompanyForm(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" /> Nova Empresa
+                </Button>
+              </div>
+            )}
           </SidebarGroup>
         )}
       </SidebarContent>
@@ -850,357 +808,280 @@ export function AppSidebar() {
             <DialogTitle>Editar empresa</DialogTitle>
           </DialogHeader>
           
-          <Tabs defaultValue="info" className="pt-2">
-            <TabsList className="w-full">
-              <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
-              <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
-              <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
-              <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
-              <TabsTrigger value="inprogress" className="flex-1">Decorrer</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="info" className="pt-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Nome da empresa</label>
-                  <Input
-                    id="name"
-                    {...form.register('name')}
-                    placeholder="Nome da empresa"
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="jobPosition" className="text-sm font-medium">Vaga</label>
-                  <Select
-                    value={form.watch('jobPosition') || "none"}
-                    onValueChange={handleJobPositionChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a vaga" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhuma vaga</SelectItem>
-                      {availableJobPositions.map(job => (
-                        <SelectItem key={job} value={job}>{job}</SelectItem>
-                      ))}
-                      <SelectItem value="custom">Personalizada...</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  {customJobPosition !== '' && (
-                    <div className="flex gap-2 mt-2">
-                      <Input
-                        value={customJobPosition}
-                        onChange={(e) => setCustomJobPosition(e.target.value)}
-                        placeholder="Digite a vaga personalizada"
-                        className="flex-1"
-                      />
-                      <Button size="sm" onClick={applyCustomJobPosition}>Aplicar</Button>
+          {editingCompany && (
+            <Tabs defaultValue="info" className="pt-2">
+              <TabsList className="w-full">
+                <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
+                <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
+                <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
+                <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
+                <TabsTrigger value="inprogress" className="flex-1">Decorrer</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="pt-4">
+                <InformationTab
+                  form={form}
+                  availableJobPositions={availableJobPositions}
+                  customJobPosition={customJobPosition}
+                  setCustomJobPosition={setCustomJobPosition}
+                  handleJobPositionChange={handleJobPositionChange}
+                  applyCustomJobPosition={applyCustomJobPosition}
+                  onSave={saveEditedCompany}
+                />
+              </TabsContent>
+              
+              <TabsContent value="emails" className="pt-4">
+                <div className="space-y-4">
+                  {editingCompany.emails.length > 0 ? (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">E-mails cadastrados</h3>
+                      <div className="space-y-2">
+                        {editingCompany.emails.map((email) => (
+                          <div key={email.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                            <div className="flex flex-col">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">{email.email}</span>
+                              </div>
+                              {email.jobPosition && (
+                                <div className="text-xs text-muted-foreground ml-6">
+                                  Vaga: {email.jobPosition}
+                                </div>
+                              )}
+                              {email.preference && (
+                                <div className="ml-6 flex items-center text-xs">
+                                  <span className={`px-1.5 py-0.5 rounded-full ${getUrgencyColor(email.preference)} inline-flex items-center mt-1`}>
+                                    {getUrgencyIndicator(email.preference)}
+                                    <span>Urgência: {email.preference}</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteCompanyEmail(email.id)} 
+                              className="h-7 w-7 hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      Nenhum e-mail cadastrado
                     </div>
                   )}
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Urgência</label>
-                  <Select
-                    value={form.watch('urgency')}
-                    onValueChange={(value) => form.setValue('urgency', value as UrgencyLevel)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a urgência" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Baixa" className="flex items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                          <span>Baixa</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="Média" className="flex items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                          <span>Média</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="Alta" className="flex items-center">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                          <span>Alta</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label htmlFor="inProgress" className="text-sm font-medium">Status em decorrer</label>
-                  <Input
-                    id="inProgress"
-                    {...form.register('inProgress')}
-                    placeholder="Digite o status atual"
-                    className="w-full"
-                  />
-                </div>
-                
-                <Button className="w-full" onClick={saveEditedCompany}>
-                  Salvar alterações
-                </Button>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="emails" className="pt-4">
-              <div className="space-y-4">
-                {editingCompany && editingCompany.emails.length > 0 ? (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">E-mails cadastrados</h3>
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Adicionar novo e-mail</h3>
                     <div className="space-y-2">
-                      {editingCompany.emails.map((email) => (
-                        <div key={email.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex flex-col">
+                      <Input
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        placeholder="E-mail"
+                        className="w-full"
+                      />
+                      
+                      <Select
+                        value={newJobPosition || "none"}
+                        onValueChange={setNewJobPosition}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Vaga (opcional)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma vaga</SelectItem>
+                          {availableJobPositions.map(job => (
+                            <SelectItem key={job} value={job}>{job}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select
+                        value={newUrgency}
+                        onValueChange={(value) => setNewUrgency(value as UrgencyLevel)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Urgência" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Baixa" className="flex items-center">
                             <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{email.email}</span>
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span>Baixa</span>
                             </div>
-                            {email.jobPosition && (
-                              <div className="text-xs text-muted-foreground ml-6">
-                                Vaga: {email.jobPosition}
-                              </div>
-                            )}
-                            {email.preference && (
-                              <div className="ml-6 flex items-center text-xs">
-                                <span className={`px-1.5 py-0.5 rounded-full ${getUrgencyColor(email.preference)} inline-flex items-center mt-1`}>
-                                  {getUrgencyIndicator(email.preference)}
-                                  <span>Urgência: {email.preference}</span>
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyEmail(email.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                          </SelectItem>
+                          <SelectItem value="Média" className="flex items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                              <span>Média</span>
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="Alta" className="flex items-center">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                              <span>Alta</span>
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button className="w-full" onClick={handleAddEmail}>
+                        Adicionar e-mail
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Nenhum e-mail cadastrado
-                  </div>
-                )}
-                
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Adicionar novo e-mail</h3>
-                  <div className="space-y-2">
-                    <Input
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="E-mail"
-                      className="w-full"
-                    />
-                    
-                    <Select
-                      value={newJobPosition || "none"}
-                      onValueChange={setNewJobPosition}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Vaga (opcional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhuma vaga</SelectItem>
-                        {availableJobPositions.map(job => (
-                          <SelectItem key={job} value={job}>{job}</SelectItem>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="phones" className="pt-4">
+                <div className="space-y-4">
+                  {editingCompany.phones.length > 0 ? (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium">Telefones cadastrados</h3>
+                      <div className="space-y-2">
+                        {editingCompany.phones.map((phone) => (
+                          <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-muted-foreground" />
+                              <span>{phone.phone}</span>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteCompanyPhone(phone.id)} 
+                              className="h-7 w-7 hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select
-                      value={newUrgency}
-                      onValueChange={(value) => setNewUrgency(value as UrgencyLevel)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Urgência" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Baixa" className="flex items-center">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span>Baixa</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Média" className="flex items-center">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                            <span>Média</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Alta" className="flex items-center">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            <span>Alta</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Button className="w-full" onClick={handleAddEmail}>
-                      Adicionar e-mail
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="phones" className="pt-4">
-              <div className="space-y-4">
-                {editingCompany && editingCompany.phones.length > 0 ? (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Telefones cadastrados</h3>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      Nenhum telefone cadastrado
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Adicionar novo telefone</h3>
                     <div className="space-y-2">
-                      {editingCompany.phones.map((phone) => (
-                        <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span>{phone.phone}</span>
-                          </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyPhone(phone.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                      <Input
+                        value={newPhone}
+                        onChange={(e) => setNewPhone(e.target.value)}
+                        placeholder="Telefone"
+                        className="w-full"
+                      />
+                      
+                      <Button className="w-full" onClick={handleAddPhone}>
+                        Adicionar telefone
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Nenhum telefone cadastrado
-                  </div>
-                )}
-                
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Adicionar novo telefone</h3>
-                  <div className="space-y-2">
-                    <Input
-                      value={newPhone}
-                      onChange={(e) => setNewPhone(e.target.value)}
-                      placeholder="Telefone"
-                      className="w-full"
-                    />
-                    
-                    <Button className="w-full" onClick={handleAddPhone}>
-                      Adicionar telefone
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="contacts" className="pt-4">
-              <div className="space-y-4">
-                {editingCompany && editingCompany.contacts.length > 0 ? (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Contatos cadastrados</h3>
+              </TabsContent>
+              
+              <TabsContent value="contacts" className="pt-4">
+                <div className="space-y-4">
+                  {editingCompany.contacts.length > 0 ? (
                     <div className="space-y-2">
-                      {editingCompany.contacts.map((contact) => (
-                        <div key={contact.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span>{contact.name}</span>
+                      <h3 className="text-sm font-medium">Contatos cadastrados</h3>
+                      <div className="space-y-2">
+                        {editingCompany.contacts.map((contact) => (
+                          <div key={contact.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <span>{contact.name}</span>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteCompanyContact(contact.id)} 
+                              className="h-7 w-7 hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteCompanyContact(contact.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      Nenhum contato cadastrado
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
+                    <div className="space-y-2">
+                      <Input
+                        value={newContact}
+                        onChange={(e) => setNewContact(e.target.value)}
+                        placeholder="Nome do contato"
+                        className="w-full"
+                      />
+                      
+                      <Button className="w-full" onClick={handleAddContact}>
+                        Adicionar contato
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Nenhum contato cadastrado
-                  </div>
-                )}
-                
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
-                  <div className="space-y-2">
-                    <Input
-                      value={newContact}
-                      onChange={(e) => setNewContact(e.target.value)}
-                      placeholder="Nome do contato"
-                      className="w-full"
-                    />
-                    
-                    <Button className="w-full" onClick={handleAddContact}>
-                      Adicionar contato
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="inprogress" className="pt-4">
-              <div className="space-y-4">
-                {editingCompany && editingCompany.inProgressStates && editingCompany.inProgressStates.length > 0 ? (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Estados em decorrer</h3>
+              </TabsContent>
+              
+              <TabsContent value="inprogress" className="pt-4">
+                <div className="space-y-4">
+                  {editingCompany.inProgressStates && editingCompany.inProgressStates.length > 0 ? (
                     <div className="space-y-2">
-                      {editingCompany.inProgressStates.map((state) => (
-                        <div key={state.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span>{state.description}</span>
+                      <h3 className="text-sm font-medium">Estados em decorrer</h3>
+                      <div className="space-y-2">
+                        {editingCompany.inProgressStates.map((state) => (
+                          <div key={state.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-muted-foreground" />
+                              <span>{state.description}</span>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteInProgressState(state.id)} 
+                              className="h-7 w-7 hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDeleteInProgressState(state.id)} 
-                            className="h-7 w-7 hover:text-destructive"
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-4">
+                      Nenhum estado em decorrer cadastrado
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Adicionar novo estado</h3>
+                    <div className="space-y-2">
+                      <Input
+                        value={newInProgressState}
+                        onChange={(e) => setNewInProgressState(e.target.value)}
+                        placeholder="Descrição do estado"
+                        className="w-full"
+                      />
+                      
+                      <Button className="w-full" onClick={handleAddInProgressState}>
+                        Adicionar estado
+                      </Button>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Nenhum estado em decorrer cadastrado
-                  </div>
-                )}
-                
-                <div className="border-t pt-4">
-                  <h3 className="text-sm font-medium mb-2">Adicionar novo estado</h3>
-                  <div className="space-y-2">
-                    <Input
-                      value={newInProgressState}
-                      onChange={(e) => setNewInProgressState(e.target.value)}
-                      placeholder="Descrição do estado"
-                      className="w-full"
-                    />
-                    
-                    <Button className="w-full" onClick={handleAddInProgressState}>
-                      Adicionar estado
-                    </Button>
-                  </div>
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          )}
           
           <DialogFooter>
             <Button variant="outline" onClick={closeEditDialog}>
@@ -1230,4 +1111,3 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
-
