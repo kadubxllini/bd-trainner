@@ -130,6 +130,7 @@ export function CompanyEditor({
       <TabsContent value="emails" className="pt-4">
         <EmailsTab
           company={company}
+          availableJobPositions={availableJobPositions}
           newEmail={newEmail}
           setNewEmail={setNewEmail}
           newJobPosition={newJobPosition}
@@ -173,3 +174,7 @@ export function CompanyEditor({
     </Tabs>
   );
 }
+
+// Export tabs components to make them available for import elsewhere
+export { InProgressTab } from './InProgressTab';
+export { InformationTab } from './InformationTab';

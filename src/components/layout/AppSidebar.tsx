@@ -77,7 +77,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
-import { InformationTab, InProgressTab } from "./sidebar/CompanyEditor";
+import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
+import { InProgressTab } from "./sidebar/CompanyEditor/InProgressTab";
 
 export function AppSidebar() {
   const { 
