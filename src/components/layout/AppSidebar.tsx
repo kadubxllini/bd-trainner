@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -875,14 +874,14 @@ export function AppSidebar() {
                 <div className="space-y-2">
                   <label htmlFor="jobPosition" className="text-sm font-medium">Vaga</label>
                   <Select
-                    value={form.watch('jobPosition') || ''}
+                    value={form.watch('jobPosition') || "none"}
                     onValueChange={handleJobPositionChange}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a vaga" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma vaga</SelectItem>
+                      <SelectItem value="none">Nenhuma vaga</SelectItem>
                       {availableJobPositions.map(job => (
                         <SelectItem key={job} value={job}>{job}</SelectItem>
                       ))}
@@ -1007,14 +1006,14 @@ export function AppSidebar() {
                     />
                     
                     <Select
-                      value={newJobPosition}
+                      value={newJobPosition || "none"}
                       onValueChange={setNewJobPosition}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Vaga (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma vaga</SelectItem>
+                        <SelectItem value="none">Nenhuma vaga</SelectItem>
                         {availableJobPositions.map(job => (
                           <SelectItem key={job} value={job}>{job}</SelectItem>
                         ))}
@@ -1231,3 +1230,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
