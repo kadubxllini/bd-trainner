@@ -3,7 +3,6 @@ import { Company } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone, Trash } from "lucide-react";
-import { useState } from "react";
 import { toast } from "sonner";
 
 interface PhonesTabProps {
@@ -21,7 +20,6 @@ export function PhonesTab({
   onAddPhone,
   onDeletePhone
 }: PhonesTabProps) {
-  // Phone validation
   const handleAddPhone = () => {
     // Basic phone validation
     const phoneRegex = /^[0-9\s\(\)\-\+]+$/;

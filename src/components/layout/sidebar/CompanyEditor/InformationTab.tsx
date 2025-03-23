@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
+import { toast } from "sonner";
 
 interface InformationTabProps {
   form: UseFormReturn<{
@@ -35,6 +36,17 @@ export function InformationTab({
   applyCustomJobPosition,
   onSave
 }: InformationTabProps) {
+  const handleSave = () => {
+    const { name } = form.getValues();
+    
+    if (!name.trim()) {
+      toast.error("Nome da empresa é obrigatório");
+      return;
+    }
+    
+    onSave();
+  }
+  
   return (
     <div className="space-y-4">
       <div className="space-y-2">
@@ -120,7 +132,7 @@ export function InformationTab({
         />
       </div>
       
-      <Button className="w-full" onClick={onSave}>
+      <Button className="w-full" onClick={handleSave}>
         Salvar alterações
       </Button>
     </div>

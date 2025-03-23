@@ -3,6 +3,7 @@ import { Company } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User, Trash } from "lucide-react";
+import { toast } from "sonner";
 
 interface ContactsTabProps {
   company: Company;
@@ -19,9 +20,18 @@ export function ContactsTab({
   onAddContact,
   onDeleteContact
 }: ContactsTabProps) {
+  const handleAddContact = () => {
+    if (!newContact.trim()) {
+      toast.error("Digite o nome do contato");
+      return;
+    }
+    
+    onAddContact();
+  }
+  
   return (
     <div className="space-y-4">
-      {company.contacts.length > 0 ? (
+      {company.contacts && company.contacts.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Contatos cadastrados</h3>
           <div className="space-y-2">
@@ -59,7 +69,7 @@ export function ContactsTab({
             className="w-full"
           />
           
-          <Button className="w-full" onClick={onAddContact}>
+          <Button className="w-full" onClick={handleAddContact}>
             Adicionar contato
           </Button>
         </div>

@@ -1,5 +1,5 @@
 
-import { Company, CompanyEmail, UrgencyLevel } from "@/types";
+import { Company, UrgencyLevel } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Trash } from "lucide-react";
@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface EmailsTabProps {
   company: Company;
@@ -36,14 +37,28 @@ export function EmailsTab({
   onAddEmail,
   onDeleteEmail
 }: EmailsTabProps) {
+  const handleAddEmail = () => {
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!newEmail.trim()) {
+      toast.error("Digite um endereço de e-mail");
+      return;
+    }
+
+    if (!emailRegex.test(newEmail)) {
+      toast.error("Formato de e-mail inválido");
+      return;
+    }
+
+    onAddEmail();
+  }
+  
   const getUrgencyColor = (urgency?: UrgencyLevel) => {
     switch(urgency) {
       case 'Baixa': return 'bg-green-100 text-green-800';
       case 'Média': return 'bg-yellow-100 text-yellow-800';
       case 'Alta': return 'bg-red-100 text-red-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -51,13 +66,10 @@ export function EmailsTab({
   const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
     switch(urgency) {
       case 'Baixa': 
-      case 'low':
         return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
       case 'Média':
-      case 'medium':
         return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
       case 'Alta':
-      case 'high':
         return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
       default: 
         return null;
@@ -66,7 +78,7 @@ export function EmailsTab({
 
   return (
     <div className="space-y-4">
-      {company.emails.length > 0 ? (
+      {company.emails && company.emails.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">E-mails cadastrados</h3>
           <div className="space-y-2">
@@ -163,7 +175,7 @@ export function EmailsTab({
             </SelectContent>
           </Select>
           
-          <Button className="w-full" onClick={onAddEmail}>
+          <Button className="w-full" onClick={handleAddEmail}>
             Adicionar e-mail
           </Button>
         </div>

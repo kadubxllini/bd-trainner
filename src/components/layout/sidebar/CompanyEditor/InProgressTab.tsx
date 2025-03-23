@@ -3,6 +3,7 @@ import { Company } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Clock, Trash } from "lucide-react";
+import { toast } from "sonner";
 
 interface InProgressTabProps {
   company: Company;
@@ -19,6 +20,15 @@ export function InProgressTab({
   onAddInProgressState,
   onDeleteInProgressState
 }: InProgressTabProps) {
+  const handleAddInProgressState = () => {
+    if (!newInProgressState.trim()) {
+      toast.error("Digite a descrição do estado");
+      return;
+    }
+    
+    onAddInProgressState();
+  }
+  
   return (
     <div className="space-y-4">
       {company.inProgressStates && company.inProgressStates.length > 0 ? (
@@ -59,7 +69,7 @@ export function InProgressTab({
             className="w-full"
           />
           
-          <Button className="w-full" onClick={onAddInProgressState}>
+          <Button className="w-full" onClick={handleAddInProgressState}>
             Adicionar estado
           </Button>
         </div>
