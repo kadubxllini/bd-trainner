@@ -20,10 +20,13 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   // Get dates with messages for highlighting in calendar
   const datesWithMessages = messages.reduce((dates: Date[], message) => {
     const messageDate = new Date(message.timestamp);
+    
+    // Create new date with time set to midnight to avoid timezone issues
     const formattedDate = new Date(
       messageDate.getFullYear(),
       messageDate.getMonth(),
-      messageDate.getDate()
+      messageDate.getDate(),
+      0, 0, 0, 0
     );
     
     if (!dates.some(date => 
@@ -38,8 +41,20 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   }, []);
   
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    onSelectDate(date);
+    if (date) {
+      // Create a new Date object with time set to midnight to avoid timezone issues
+      const normalizedDate = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        0, 0, 0, 0
+      );
+      setSelectedDate(normalizedDate);
+      onSelectDate(normalizedDate);
+    } else {
+      setSelectedDate(undefined);
+      onSelectDate(undefined);
+    }
   };
   
   if (!isVisible) return null;

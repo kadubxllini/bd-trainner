@@ -180,10 +180,28 @@ const MessagesView = () => {
     
     if (selectedDate) {
       const messageDate = new Date(message.timestamp);
-      const targetDate = startOfDay(selectedDate);
-      const messageDateStart = startOfDay(messageDate);
       
-      return isEqual(targetDate, messageDateStart);
+      // Normalize dates to avoid timezone issues
+      const targetDateNormalized = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        0, 0, 0, 0
+      );
+      
+      const messageDateNormalized = new Date(
+        messageDate.getFullYear(),
+        messageDate.getMonth(),
+        messageDate.getDate(),
+        0, 0, 0, 0
+      );
+      
+      // Compare dates by year, month, and day
+      return (
+        targetDateNormalized.getFullYear() === messageDateNormalized.getFullYear() &&
+        targetDateNormalized.getMonth() === messageDateNormalized.getMonth() &&
+        targetDateNormalized.getDate() === messageDateNormalized.getDate()
+      );
     }
     
     return true;

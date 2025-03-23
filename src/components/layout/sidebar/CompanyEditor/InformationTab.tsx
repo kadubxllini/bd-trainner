@@ -207,11 +207,11 @@ export function InformationTab({
       </div>
       
       <div className="space-y-2">
-        <label htmlFor="inProgress" className="text-sm font-medium">Status em decorrer</label>
+        <label htmlFor="inProgress" className="text-sm font-medium">Decorrer</label>
         <Input
           id="inProgress"
           {...form.register('inProgress')}
-          placeholder="Digite o status atual"
+          placeholder="Digite o estado atual"
           className="w-full"
         />
       </div>
