@@ -11,11 +11,15 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
+import { X, Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface InformationTabProps {
   form: UseFormReturn<{
     name: string;
-    jobPosition: string;
+    jobPositions: string[]; // Changed from jobPosition to jobPositions
     urgency: UrgencyLevel;
     inProgress: string;
   }>;
@@ -36,6 +40,56 @@ export function InformationTab({
   applyCustomJobPosition,
   onSave
 }: InformationTabProps) {
+  const [selectedJobPosition, setSelectedJobPosition] = useState<string>("none");
+  const [currentJobPositions, setCurrentJobPositions] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Initialize current positions from form
+    const positions = form.getValues().jobPositions || [];
+    setCurrentJobPositions(positions);
+  }, [form]);
+  
+  const handleAddJobPosition = () => {
+    if (selectedJobPosition === "none" || selectedJobPosition === "custom") {
+      return;
+    }
+    
+    // Prevent duplicate job positions
+    if (currentJobPositions.includes(selectedJobPosition)) {
+      toast.error("Esta vaga já foi adicionada");
+      return;
+    }
+    
+    const updatedPositions = [...currentJobPositions, selectedJobPosition];
+    setCurrentJobPositions(updatedPositions);
+    form.setValue('jobPositions', updatedPositions);
+    setSelectedJobPosition("none");
+  };
+  
+  const handleRemoveJobPosition = (position: string) => {
+    const updatedPositions = currentJobPositions.filter(p => p !== position);
+    setCurrentJobPositions(updatedPositions);
+    form.setValue('jobPositions', updatedPositions);
+  };
+  
+  const handleCustomJobPosition = () => {
+    if (!customJobPosition.trim()) {
+      toast.error("Digite uma vaga personalizada");
+      return;
+    }
+    
+    // Prevent duplicate job positions
+    if (currentJobPositions.includes(customJobPosition)) {
+      toast.error("Esta vaga já foi adicionada");
+      return;
+    }
+    
+    const updatedPositions = [...currentJobPositions, customJobPosition];
+    setCurrentJobPositions(updatedPositions);
+    form.setValue('jobPositions', updatedPositions);
+    setCustomJobPosition('');
+  };
+  
   const handleSave = () => {
     const { name } = form.getValues();
     
@@ -45,7 +99,7 @@ export function InformationTab({
     }
     
     onSave();
-  }
+  };
   
   return (
     <div className="space-y-4">
@@ -60,24 +114,34 @@ export function InformationTab({
       </div>
       
       <div className="space-y-2">
-        <label htmlFor="jobPosition" className="text-sm font-medium">Vaga</label>
-        <Select
-          value={form.watch('jobPosition') || "none"}
-          onValueChange={handleJobPositionChange}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione a vaga" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Nenhuma vaga</SelectItem>
-            {availableJobPositions.map(job => (
-              <SelectItem key={job} value={job}>{job}</SelectItem>
-            ))}
-            <SelectItem value="custom">Personalizada...</SelectItem>
-          </SelectContent>
-        </Select>
+        <label htmlFor="jobPosition" className="text-sm font-medium">Vagas</label>
+        <div className="flex gap-2">
+          <Select
+            value={selectedJobPosition}
+            onValueChange={setSelectedJobPosition}
+          >
+            <SelectTrigger className="flex-1">
+              <SelectValue placeholder="Selecione a vaga" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhuma vaga</SelectItem>
+              {availableJobPositions.map(job => (
+                <SelectItem key={job} value={job}>{job}</SelectItem>
+              ))}
+              <SelectItem value="custom">Personalizada...</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            type="button" 
+            size="icon" 
+            onClick={handleAddJobPosition}
+            disabled={selectedJobPosition === "none" || selectedJobPosition === "custom"}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
         
-        {customJobPosition !== '' && (
+        {selectedJobPosition === "custom" && (
           <div className="flex gap-2 mt-2">
             <Input
               value={customJobPosition}
@@ -85,8 +149,28 @@ export function InformationTab({
               placeholder="Digite a vaga personalizada"
               className="flex-1"
             />
-            <Button size="sm" onClick={applyCustomJobPosition}>Aplicar</Button>
+            <Button size="sm" onClick={handleCustomJobPosition}>Adicionar</Button>
           </div>
+        )}
+        
+        {currentJobPositions.length > 0 && (
+          <ScrollArea className="h-20 p-2 border rounded-md">
+            <div className="flex flex-wrap gap-2">
+              {currentJobPositions.map((position, index) => (
+                <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                  {position}
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-4 w-4 p-0" 
+                    onClick={() => handleRemoveJobPosition(position)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </Badge>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </div>
       

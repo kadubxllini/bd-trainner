@@ -15,6 +15,7 @@ import {
 import { Pencil, Trash } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSidebar } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 interface CompanyListProps {
   companies: Company[];
@@ -83,13 +84,19 @@ export function CompanyList({
                         </span>
                       )}
                     </div>
-                    {company.jobPosition && (
-                      <span className="text-xs text-muted-foreground truncate">
-                        Vaga: {company.jobPosition}
-                      </span>
+                    
+                    {company.jobPositions && company.jobPositions.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {company.jobPositions.map((position, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs py-0">
+                            {position}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
+                    
                     {company.urgency && (
-                      <div className="flex items-center text-xs text-muted-foreground">
+                      <div className="flex items-center text-xs text-muted-foreground mt-1">
                         {getUrgencyIndicator(company.urgency)}
                         <span className="truncate">
                           Urgência: {company.urgency}

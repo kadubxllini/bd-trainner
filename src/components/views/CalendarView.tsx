@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { useMessages } from "@/context/MessageContext";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, MessageSquare } from "lucide-react";
 
 interface CalendarViewProps {
   onSelectDate: (date: Date | undefined) => void;
@@ -19,6 +19,7 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   
   // Get dates with messages for highlighting in calendar
   const datesWithMessages = messages.reduce((dates: Date[], message) => {
+    // Fix: Don't add days to the date when processing
     const messageDate = new Date(message.timestamp);
     const formattedDate = new Date(
       messageDate.getFullYear(),

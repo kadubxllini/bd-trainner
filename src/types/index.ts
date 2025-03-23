@@ -13,7 +13,7 @@ export interface Message {
 export interface Company {
   id: string;
   name: string;
-  jobPosition: string | null;
+  jobPositions: string[]; // Changed from jobPosition to jobPositions array
   urgency: UrgencyLevel;
   inProgress: string | null;
   emails: CompanyEmail[];

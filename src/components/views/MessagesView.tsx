@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format, startOfDay, parseISO, addDays } from 'date-fns';
+import { format, startOfDay, parseISO } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -88,7 +88,7 @@ const MessagesView = () => {
         console.log("File uploaded successfully:", publicUrl);
       }
       
-      const customTimestamp = addDays(new Date(messageDate), 1);
+      const customTimestamp = new Date(messageDate);
       
       const now = new Date();
       customTimestamp.setHours(now.getHours());
@@ -167,7 +167,7 @@ const MessagesView = () => {
   };
   
   const formatMessageDate = (timestamp: number) => {
-    const date = addDays(new Date(timestamp), 0);
+    const date = new Date(timestamp);
     return format(date, "PPP", { locale: pt });
   };
   
@@ -191,7 +191,7 @@ const MessagesView = () => {
   
   const groupedMessages = showAllMessages
     ? messages.reduce((groups: Record<string, Message[]>, message) => {
-        const messageDate = addDays(new Date(message.timestamp), 0);
+        const messageDate = new Date(message.timestamp);
         const date = format(messageDate, 'yyyy-MM-dd');
         if (!groups[date]) {
           groups[date] = [];
