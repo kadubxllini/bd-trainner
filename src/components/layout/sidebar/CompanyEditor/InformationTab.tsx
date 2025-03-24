@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Clock, Trash } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -23,22 +23,32 @@ interface InformationTabProps {
     urgency: UrgencyLevel;
     inProgress: string;
   }>;
+  company: Company;
   availableJobPositions: string[];
   customJobPosition: string;
   setCustomJobPosition: (value: string) => void;
   handleJobPositionChange: (value: string) => void;
   applyCustomJobPosition: () => void;
   onSave: () => void;
+  newInProgressState: string;
+  setNewInProgressState: (value: string) => void;
+  onAddInProgressState: () => void;
+  onDeleteInProgressState: (stateId: string) => void;
 }
 
 export function InformationTab({
   form,
+  company,
   availableJobPositions,
   customJobPosition,
   setCustomJobPosition,
   handleJobPositionChange,
   applyCustomJobPosition,
-  onSave
+  onSave,
+  newInProgressState,
+  setNewInProgressState,
+  onAddInProgressState,
+  onDeleteInProgressState
 }: InformationTabProps) {
   const [selectedJobPosition, setSelectedJobPosition] = useState<string>("none");
   const [currentJobPositions, setCurrentJobPositions] = useState<string[]>([]);
@@ -100,6 +110,15 @@ export function InformationTab({
     
     onSave();
   };
+
+  const handleAddInProgressState = () => {
+    if (!newInProgressState.trim()) {
+      toast.error("Digite a descrição do estado");
+      return;
+    }
+    
+    onAddInProgressState();
+  }
   
   return (
     <div className="space-y-4">
@@ -206,14 +225,59 @@ export function InformationTab({
         </Select>
       </div>
       
+      {/* Decorrer Section */}
       <div className="space-y-2">
-        <label htmlFor="inProgress" className="text-sm font-medium">Decorrer</label>
+        <label className="text-sm font-medium">Decorrer</label>
         <Input
           id="inProgress"
           {...form.register('inProgress')}
           placeholder="Digite o estado atual"
           className="w-full"
         />
+        
+        <div className="flex gap-2 mt-2">
+          <Input
+            value={newInProgressState}
+            onChange={(e) => setNewInProgressState(e.target.value)}
+            placeholder="Descrição do estado"
+            className="flex-1"
+          />
+          <Button 
+            size="icon" 
+            onClick={handleAddInProgressState}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        {company.inProgressStates && company.inProgressStates.length > 0 ? (
+          <div className="mt-2">
+            <ScrollArea className="h-[150px] p-2 border rounded-md">
+              <div className="space-y-2">
+                {company.inProgressStates.map((state) => (
+                  <div key={state.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                    <div className="flex items-center gap-2 flex-1">
+                      <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate">{state.description}</span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => onDeleteInProgressState(state.id)} 
+                      className="h-7 w-7 hover:text-destructive flex-shrink-0"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-2 border rounded-md p-2 mt-2">
+            Nenhum estado em decorrer cadastrado
+          </div>
+        )}
       </div>
       
       <Button className="w-full" onClick={handleSave}>

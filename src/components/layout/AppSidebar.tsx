@@ -78,7 +78,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
 import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
-import { InProgressTab } from "./sidebar/CompanyEditor/InProgressTab";
+import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
 
 export function AppSidebar() {
   const { 
@@ -815,126 +815,33 @@ export function AppSidebar() {
                 <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
                 <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
                 <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
-                <TabsTrigger value="inprogress" className="flex-1">Decorrer</TabsTrigger>
               </TabsList>
               
               <TabsContent value="info" className="pt-4">
                 <InformationTab
                   form={form}
+                  company={editingCompany}
                   availableJobPositions={availableJobPositions}
                   customJobPosition={customJobPosition}
                   setCustomJobPosition={setCustomJobPosition}
                   handleJobPositionChange={handleJobPositionChange}
                   applyCustomJobPosition={applyCustomJobPosition}
                   onSave={saveEditedCompany}
+                  newInProgressState={newInProgressState}
+                  setNewInProgressState={setNewInProgressState}
+                  onAddInProgressState={handleAddInProgressState}
+                  onDeleteInProgressState={handleDeleteInProgressState}
                 />
               </TabsContent>
               
               <TabsContent value="emails" className="pt-4">
-                <div className="space-y-4">
-                  {editingCompany.emails.length > 0 ? (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">E-mails cadastrados</h3>
-                      <div className="space-y-2">
-                        {editingCompany.emails.map((email) => (
-                          <div key={email.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4 text-muted-foreground" />
-                                <span className="font-medium">{email.email}</span>
-                              </div>
-                              {email.jobPosition && (
-                                <div className="text-xs text-muted-foreground ml-6">
-                                  Vaga: {email.jobPosition}
-                                </div>
-                              )}
-                              {email.preference && (
-                                <div className="ml-6 flex items-center text-xs">
-                                  <span className={`px-1.5 py-0.5 rounded-full ${getUrgencyColor(email.preference)} inline-flex items-center mt-1`}>
-                                    {getUrgencyIndicator(email.preference)}
-                                    <span>Urgência: {email.preference}</span>
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteCompanyEmail(email.id)} 
-                              className="h-7 w-7 hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      Nenhum e-mail cadastrado
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-medium mb-2">Adicionar novo e-mail</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        placeholder="E-mail"
-                        className="w-full"
-                      />
-                      
-                      <Select
-                        value={newJobPosition || "none"}
-                        onValueChange={setNewJobPosition}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vaga (opcional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Nenhuma vaga</SelectItem>
-                          {availableJobPositions.map(job => (
-                            <SelectItem key={job} value={job}>{job}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      
-                      <Select
-                        value={newUrgency}
-                        onValueChange={(value) => setNewUrgency(value as UrgencyLevel)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Urgência" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Baixa" className="flex items-center">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                              <span>Baixa</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="Média" className="flex items-center">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                              <span>Média</span>
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="Alta" className="flex items-center">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                              <span>Alta</span>
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      
-                      <Button className="w-full" onClick={handleAddEmail}>
-                        Adicionar e-mail
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                <EmailsTab
+                  company={editingCompany}
+                  newEmail={newEmail}
+                  setNewEmail={setNewEmail}
+                  onAddEmail={handleAddEmail}
+                  onDeleteEmail={handleDeleteCompanyEmail}
+                />
               </TabsContent>
               
               <TabsContent value="phones" className="pt-4">
@@ -1010,66 +917,4 @@ export function AppSidebar() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      Nenhum contato cadastrado
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newContact}
-                        onChange={(e) => setNewContact(e.target.value)}
-                        placeholder="Nome do contato"
-                        className="w-full"
-                      />
-                      
-                      <Button className="w-full" onClick={handleAddContact}>
-                        Adicionar contato
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="inprogress" className="pt-4">
-                <InProgressTab
-                  company={editingCompany}
-                  newInProgressState={newInProgressState}
-                  setNewInProgressState={setNewInProgressState}
-                  onAddInProgressState={handleAddInProgressState}
-                  onDeleteInProgressState={handleDeleteInProgressState}
-                />
-              </TabsContent>
-            </Tabs>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={closeEditDialog}>
-              Fechar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog de confirmação para excluir empresa */}
-      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir empresa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir a empresa "{companyToDelete?.name}"? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCompany} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Sidebar>
-  );
-}
+                    <div className="text-center text-muted-

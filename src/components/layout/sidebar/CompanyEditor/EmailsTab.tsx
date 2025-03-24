@@ -7,13 +7,8 @@ import { toast } from "sonner";
 
 interface EmailsTabProps {
   company: Company;
-  availableJobPositions: string[];
   newEmail: string;
   setNewEmail: (value: string) => void;
-  newJobPosition: string;
-  setNewJobPosition: (value: string) => void;
-  newUrgency: string;
-  setNewUrgency: (value: string) => void;
   onAddEmail: () => void;
   onDeleteEmail: (emailId: string) => void;
 }
