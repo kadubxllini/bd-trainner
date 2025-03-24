@@ -1,3 +1,4 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
@@ -921,4 +922,22 @@ export function AppSidebar() {
                     <div className="space-y-2">
                       <Input
                         value={newContact}
-                        onChange={(
+                        onChange={(e) => setNewContact(e.target.value)}
+                        placeholder="Nome do contato"
+                        className="w-full"
+                      />
+                      
+                      <Button className="w-full" onClick={handleAddContact}>
+                        Adicionar contato
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Sidebar>
+  );
+}
