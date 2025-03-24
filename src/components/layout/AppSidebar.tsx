@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -582,16 +581,16 @@ export function AppSidebar() {
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-2 bg-background z-50" align="start">
                         <div className="space-y-2">
-                          <p className="text-xs font-medium">Estados em decorrer:</p>
+                          <p className="text-xs font-medium">Selecione um estado:</p>
                           <div className="flex flex-col space-y-1">
                             <ScrollArea className="h-[200px] pr-3">
                               {availableInProgressStates.map(state => (
                                 <Button 
                                   key={state}
                                   size="sm" 
-                                  variant="outline"
+                                  variant={(filterType === 'inProgress' && state === state) ? "default" : "outline"}
                                   className="text-xs h-7 justify-start w-full mb-1"
-                                  onClick={filterByInProgress}
+                                  onClick={() => filterByInProgress()}
                                 >
                                   {state}
                                 </Button>
@@ -919,25 +918,4 @@ export function AppSidebar() {
                   
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newContact}
-                        onChange={(e) => setNewContact(e.target.value)}
-                        placeholder="Nome do contato"
-                        className="w-full"
-                      />
-                      
-                      <Button className="w-full" onClick={handleAddContact}>
-                        Adicionar contato
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Sidebar>
-  );
-}
+                    <div
