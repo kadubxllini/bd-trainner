@@ -112,8 +112,6 @@ export function AppSidebar() {
   const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [newEmail, setNewEmail] = useState('');
-  const [newJobPosition, setNewJobPosition] = useState('');
-  const [newUrgency, setNewUrgency] = useState<UrgencyLevel>('Média');
   const [newPhone, setNewPhone] = useState('');
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -243,10 +241,8 @@ export function AppSidebar() {
 
   const handleAddEmail = () => {
     if (editingCompany && newEmail.trim()) {
-      addCompanyEmail(editingCompany.id, newEmail, newJobPosition, newUrgency);
+      addCompanyEmail(editingCompany.id, newEmail);
       setNewEmail('');
-      setNewJobPosition('');
-      setNewUrgency('Média');
     }
   };
 
@@ -267,8 +263,6 @@ export function AppSidebar() {
   const closeEditDialog = () => {
     setEditingCompany(null);
     setNewEmail('');
-    setNewJobPosition('');
-    setNewUrgency('Média');
     setNewPhone('');
     setNewContact('');
   };
@@ -917,4 +911,14 @@ export function AppSidebar() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center text-muted-
+                    <div className="text-center text-muted-foreground py-4">
+                      Nenhum contato cadastrado
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-4">
+                    <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
+                    <div className="space-y-2">
+                      <Input
+                        value={newContact}
+                        onChange={(
