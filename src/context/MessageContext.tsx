@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from '@/types';
 import { toast } from 'sonner';
@@ -6,7 +7,6 @@ import { useAuth } from './AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface MessageContextProps {
-  messages: Message[];
   companies: Company[];
   activeCompany: Company | null;
   addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
@@ -78,8 +78,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const { data, error } = await supabase
         .from('in_progress_states')
-        .select('state')
-        .order('state', { ascending: true });
+        .select('description')
+        .order('description', { ascending: true });
       
       if (error) {
         console.error('Error fetching in progress states:', error);
@@ -87,7 +87,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       
       if (data) {
-        setAvailableInProgressStates(data.map(item => item.state));
+        setAvailableInProgressStates(data.map(item => item.description));
       }
     };
     
@@ -152,7 +152,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
           
           const { data: inProgressStatesData, error: inProgressStatesError } = await supabase
-            .from('company_in_progress_states')
+            .from('company_in_progress')
             .select('*')
             .eq('company_id', company.id);
             
@@ -182,7 +182,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             })) || [],
             inProgressStates: inProgressStatesData?.map(state => ({
               id: state.id,
-              state: state.state,
+              description: state.description,
             })) || [],
             messages: []
           };
@@ -194,6 +194,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: !!user
   });
   
+  // Define all mutations
   const createCompanyMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error("Usuário não autenticado");
@@ -280,7 +281,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const { error } = await supabase
         .from('in_progress_states')
         .delete()
-        .eq('state', state);
+        .eq('description', state);
       
       if (error) throw error;
     },
@@ -296,8 +297,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addCompanyInProgressStateMutation = useMutation({
     mutationFn: async ({ companyId, state }: { companyId: string, state: string }) => {
       const { error } = await supabase
-        .from('company_in_progress_states')
-        .insert({ company_id: companyId, state });
+        .from('company_in_progress')
+        .insert({ company_id: companyId, description: state });
       
       if (error) throw error;
     },
@@ -313,7 +314,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteCompanyInProgressStateMutation = useMutation({
     mutationFn: async ({ companyId, stateId }: { companyId: string, stateId: string }) => {
       const { error } = await supabase
-        .from('company_in_progress_states')
+        .from('company_in_progress')
         .delete()
         .eq('id', stateId);
       
@@ -332,7 +333,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { data: existingState } = await supabase
       .from('in_progress_states')
       .select('*')
-      .eq('state', state)
+      .eq('description', state)
       .single();
 
     if (existingState) {
@@ -341,7 +342,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const { data, error } = await supabase
       .from('in_progress_states')
-      .insert({ state })
+      .insert({ description: state })
       .select()
       .single();
     
@@ -354,8 +355,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     const { data, error } = await supabase
       .from('in_progress_states')
-      .select('state')
-      .order('state', { ascending: true });
+      .select('description')
+      .order('description', { ascending: true });
     
     if (error) {
       console.error('Error fetching in progress states:', error);
@@ -363,9 +364,247 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     
     if (data) {
-      setAvailableInProgressStates(data.map(item => item.state));
+      setAvailableInProgressStates(data.map(item => item.description));
     }
   };
+
+  // Add email mutation
+  const addCompanyEmailMutation = useMutation({
+    mutationFn: async ({ companyId, email, jobPosition, preference }: 
+      { companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel }) => {
+      const { error } = await supabase
+        .from('company_emails')
+        .insert({ company_id: companyId, email, job_position: jobPosition, preference });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Email adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar email: ${error.message}`);
+    }
+  });
+
+  // Delete email mutation
+  const deleteCompanyEmailMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const { error } = await supabase
+        .from('company_emails')
+        .delete()
+        .eq('id', emailId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Email removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover email: ${error.message}`);
+    }
+  });
+
+  // Add phone mutation
+  const addCompanyPhoneMutation = useMutation({
+    mutationFn: async ({ companyId, phone }: { companyId: string, phone: string }) => {
+      const { error } = await supabase
+        .from('company_phones')
+        .insert({ company_id: companyId, phone });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Telefone adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar telefone: ${error.message}`);
+    }
+  });
+
+  // Delete phone mutation
+  const deleteCompanyPhoneMutation = useMutation({
+    mutationFn: async (phoneId: string) => {
+      const { error } = await supabase
+        .from('company_phones')
+        .delete()
+        .eq('id', phoneId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Telefone removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover telefone: ${error.message}`);
+    }
+  });
+
+  // Add contact mutation
+  const addCompanyContactMutation = useMutation({
+    mutationFn: async ({ companyId, name }: { companyId: string, name: string }) => {
+      const { error } = await supabase
+        .from('company_contacts')
+        .insert({ company_id: companyId, name });
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Contato adicionado');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar contato: ${error.message}`);
+    }
+  });
+
+  // Delete contact mutation
+  const deleteCompanyContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const { error } = await supabase
+        .from('company_contacts')
+        .delete()
+        .eq('id', contactId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Contato removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover contato: ${error.message}`);
+    }
+  });
+
+  // Add message mutation
+  const addMessageMutation = useMutation({
+    mutationFn: async ({ content, fileAttachment, customTimestamp }: 
+      { content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number }) => {
+      if (!activeCompany || !user) throw new Error("No active company or user");
+
+      const messageData = {
+        content,
+        company_id: activeCompany.id,
+        user_id: user.id,
+        timestamp: customTimestamp ? new Date(customTimestamp).toISOString() : new Date().toISOString(),
+        file_name: fileAttachment?.name,
+        file_url: fileAttachment?.url,
+        file_type: fileAttachment?.type
+      };
+
+      const { error } = await supabase
+        .from('messages')
+        .insert(messageData);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao enviar mensagem: ${error.message}`);
+    }
+  });
+
+  // Update message mutation
+  const updateMessageMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: Partial<Message> }) => {
+      const updateData: any = {};
+      
+      if (data.content !== undefined) updateData.content = data.content;
+      
+      const { error } = await supabase
+        .from('messages')
+        .update(updateData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      toast.success('Mensagem atualizada');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao atualizar mensagem: ${error.message}`);
+    }
+  });
+
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      toast.success('Mensagem removida');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover mensagem: ${error.message}`);
+    }
+  });
+
+  // Job position mutations
+  const addJobPositionMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase
+        .from('job_positions')
+        .insert({ title });
+      
+      if (error) throw error;
+      
+      // Refresh the job positions list
+      const { data } = await supabase
+        .from('job_positions')
+        .select('title')
+        .order('title', { ascending: true });
+      
+      if (data) {
+        setAvailableJobPositions(data.map(job => job.title));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao adicionar vaga: ${error.message}`);
+    }
+  });
+
+  const deleteJobPositionMutation = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase
+        .from('job_positions')
+        .delete()
+        .eq('title', title);
+      
+      if (error) throw error;
+      
+      // Refresh the job positions list
+      const { data } = await supabase
+        .from('job_positions')
+        .select('title')
+        .order('title', { ascending: true });
+      
+      if (data) {
+        setAvailableJobPositions(data.map(job => job.title));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover vaga: ${error.message}`);
+    }
+  });
 
   const createCompany = async (name: string) => {
     if (!name.trim()) return;
@@ -472,7 +711,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <MessageContext.Provider
       value={{
-        messages,
         companies,
         activeCompany,
         addMessage,
@@ -496,7 +734,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteInProgressState,
         addCompanyInProgressState,
         deleteCompanyInProgressState,
-        isLoading: isLoadingCompanies || isLoadingMessages,
+        isLoading: isLoadingCompanies,
       }}
     >
       {children}

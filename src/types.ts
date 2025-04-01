@@ -1,3 +1,4 @@
+
 export interface CompanyEmail {
   id: string;
   email: string;
@@ -19,7 +20,7 @@ export type UrgencyLevel = 'Baixa' | 'Média' | 'Alta' | 'low' | 'medium' | 'hig
 
 export interface InProgressState {
   id: string;
-  state: string;
+  description: string;
 }
 
 export interface Company {

@@ -117,7 +117,7 @@ export function DecorrerTab({
           <div className="flex flex-wrap gap-2">
             {company.inProgressStates.map((state) => (
               <Badge key={state.id} variant="secondary" className="flex items-center gap-1">
-                {state.state}
+                {state.description}
                 <Button 
                   variant="ghost" 
                   size="icon" 
