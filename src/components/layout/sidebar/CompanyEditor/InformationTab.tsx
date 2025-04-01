@@ -220,14 +220,14 @@ export function InformationTab({
       <div className="space-y-2">
         <label className="text-sm font-medium">Estado Decorrer</label>
         <Select
-          value={form.watch('inProgress') || ""}
-          onValueChange={(value) => form.setValue('inProgress', value)}
+          value={form.watch('inProgress') || "none"}
+          onValueChange={(value) => form.setValue('inProgress', value === "none" ? "" : value)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Selecione o estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Nenhum</SelectItem>
+            <SelectItem value="none">Nenhum</SelectItem>
             {company && company.inProgressStates && company.inProgressStates.map((state) => (
               <SelectItem key={state.id} value={state.description}>
                 <div className="flex items-center gap-2">
