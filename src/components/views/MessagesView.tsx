@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -34,7 +35,7 @@ import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
   const { user } = useAuth();
-  const { activeCompany, messages, addMessage, deleteMessage, updateMessage, isLoading } = useMessages();
+  const { activeCompany, messages = [], addMessage, deleteMessage, updateMessage, isLoading } = useMessages();
   const [newMessage, setNewMessage] = useState('');
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editedContent, setEditedContent] = useState('');
@@ -175,7 +176,8 @@ const MessagesView = () => {
     return format(new Date(timestamp), "HH:mm", { locale: pt });
   };
   
-  const filteredMessages = messages.filter(message => {
+  // Make sure messages is always an array even if it's undefined
+  const filteredMessages = (messages || []).filter(message => {
     if (showAllMessages) return true;
     
     if (selectedDate) {
@@ -207,8 +209,9 @@ const MessagesView = () => {
     return true;
   });
   
+  // Also ensure that we handle the case when messages is undefined
   const groupedMessages = showAllMessages
-    ? messages.reduce((groups: Record<string, Message[]>, message) => {
+    ? (messages || []).reduce((groups: Record<string, Message[]>, message) => {
         const messageDate = new Date(message.timestamp);
         const date = format(messageDate, 'yyyy-MM-dd');
         if (!groups[date]) {

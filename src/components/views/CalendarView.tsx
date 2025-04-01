@@ -15,10 +15,10 @@ interface CalendarViewProps {
 
 const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const { messages, activeCompany } = useMessages();
+  const { messages = [], activeCompany } = useMessages();
   
   // Obter datas com mensagens para destaque no calendário
-  const datesWithMessages = messages.reduce((dates: Date[], message) => {
+  const datesWithMessages = (messages || []).reduce((dates: Date[], message) => {
     const messageDate = new Date(message.timestamp);
     
     // Criar nova data com hora definida para meio-dia para evitar problemas de fuso horário

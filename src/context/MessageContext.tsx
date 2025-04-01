@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 interface MessageContextProps {
   companies: Company[];
   activeCompany: Company | null;
+  messages: Message[]; // Added messages array to the interface
   addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
   updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
@@ -192,6 +193,41 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return companiesWithDetails;
     },
     enabled: !!user
+  });
+
+  // Query for messages based on the active company
+  const { 
+    data: messagesData = [], 
+    isLoading: isLoadingMessages 
+  } = useQuery({
+    queryKey: ['messages', activeCompany?.id],
+    queryFn: async () => {
+      if (!user || !activeCompany) return [];
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('company_id', activeCompany.id)
+        .order('timestamp', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching messages:', error);
+        toast.error(`Erro ao carregar mensagens: ${error.message}`);
+        return [];
+      }
+      
+      return data.map(message => ({
+        id: message.id,
+        content: message.content,
+        timestamp: new Date(message.timestamp).getTime(),
+        fileAttachment: message.file_url ? {
+          name: message.file_name || 'arquivo',
+          url: message.file_url,
+          type: message.file_type || ''
+        } : undefined
+      }));
+    },
+    enabled: !!user && !!activeCompany
   });
   
   // Define all mutations
@@ -713,6 +749,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         companies,
         activeCompany,
+        messages: messagesData, // Provide the messages data from the query
         addMessage,
         deleteMessage,
         updateMessage,
@@ -734,7 +771,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteInProgressState,
         addCompanyInProgressState,
         deleteCompanyInProgressState,
-        isLoading: isLoadingCompanies,
+        isLoading: isLoadingCompanies || isLoadingMessages,
       }}
     >
       {children}
