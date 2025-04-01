@@ -139,7 +139,6 @@ export function AppSidebar() {
     if (searchQuery.trim() === '') {
       let filtered = [...companies];
       
-      // Apply filters
       if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
         filtered = filtered.filter(company => 
           company.jobPositions.includes(jobPositionFilter)
@@ -178,7 +177,6 @@ export function AppSidebar() {
         return false;
       });
       
-      // Apply additional filters
       if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
         filtered = filtered.filter(company => 
           company.jobPositions.includes(jobPositionFilter)
@@ -213,7 +211,7 @@ export function AppSidebar() {
       name: company.name,
       jobPositions: company.jobPositions || [],
       urgency: company.urgency || 'Média',
-      inProgress: ''
+      inProgress: company.inProgress || ''
     });
   };
 
@@ -226,6 +224,7 @@ export function AppSidebar() {
           name: formData.name,
           jobPositions: formData.jobPositions,
           urgency: formData.urgency,
+          inProgress: formData.inProgress
         });
       }
     }
@@ -302,7 +301,6 @@ export function AppSidebar() {
     if (value === 'custom') {
       setCustomJobPosition('');
     } else if (value !== 'none') {
-      // Add job position to the array if not already present
       const currentPositions = form.getValues().jobPositions || [];
       if (!currentPositions.includes(value)) {
         form.setValue('jobPositions', [...currentPositions, value]);

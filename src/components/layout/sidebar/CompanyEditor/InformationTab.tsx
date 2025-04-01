@@ -217,9 +217,32 @@ export function InformationTab({
         </Select>
       </div>
       
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Estado Decorrer</label>
+        <Select
+          value={form.watch('inProgress') || ""}
+          onValueChange={(value) => form.setValue('inProgress', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Nenhum</SelectItem>
+            {company && company.inProgressStates && company.inProgressStates.map((state) => (
+              <SelectItem key={state.id} value={state.description}>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  <span>{state.description}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
       {company && setNewInProgressState && onAddInProgressState && onDeleteInProgressState && (
         <div className="space-y-2 border-t pt-4">
-          <h3 className="text-sm font-medium">Estados de Decorrer</h3>
+          <h3 className="text-sm font-medium">Gerenciar Estados de Decorrer</h3>
           <DecorrerTab 
             company={company}
             availableInProgressStates={[]}
