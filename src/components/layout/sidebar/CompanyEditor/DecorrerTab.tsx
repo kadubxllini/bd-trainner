@@ -43,9 +43,7 @@ export function DecorrerTab({
             placeholder="Nome do estado"
             className="flex-1"
           />
-          <Button 
-            onClick={handleAddState}
-          >
+          <Button onClick={handleAddState}>
             Adicionar
           </Button>
         </div>

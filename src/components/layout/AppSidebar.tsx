@@ -902,4 +902,25 @@ export function AppSidebar() {
                   
                   <div className="border-t pt-4">
                     <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
-                    <div
+                    <div className="space-y-2">
+                      <Input
+                        value={newContact}
+                        onChange={(e) => setNewContact(e.target.value)}
+                        placeholder="Nome do contato"
+                        className="w-full"
+                      />
+                      
+                      <Button className="w-full" onClick={handleAddContact}>
+                        Adicionar contato
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Sidebar>
+  );
+}
