@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock, Trash, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface DecorrerTabProps {
   company: Company;
@@ -25,30 +26,51 @@ export function DecorrerTab({
   const { addCompanyInProgressState, deleteCompanyInProgressState, addInProgressState, deleteInProgressState } = useMessages();
 
   const handleAddState = async () => {
-    if (!newState.trim()) return;
-
-    if (onAddGlobalInProgressState) {
-      await onAddGlobalInProgressState(newState);
-    } else if (company && company.id) {
-      await addCompanyInProgressState(company.id, newState);
-    } else {
-      await addInProgressState(newState);
+    if (!newState.trim()) {
+      toast.error("Digite um estado para adicionar");
+      return;
     }
 
-    setNewState('');
+    try {
+      if (onAddGlobalInProgressState) {
+        await onAddGlobalInProgressState(newState);
+      } else if (company && company.id) {
+        await addCompanyInProgressState(company.id, newState);
+      } else {
+        await addInProgressState(newState);
+      }
+
+      setNewState('');
+      toast.success('Estado adicionado com sucesso');
+    } catch (error) {
+      console.error('Error adding state:', error);
+      toast.error('Erro ao adicionar estado');
+    }
   };
 
   const handleDeleteState = async (stateId: string) => {
-    if (company && company.id) {
-      await deleteCompanyInProgressState(company.id, stateId);
+    try {
+      if (company && company.id) {
+        await deleteCompanyInProgressState(company.id, stateId);
+        toast.success('Estado removido com sucesso');
+      }
+    } catch (error) {
+      console.error('Error deleting state:', error);
+      toast.error('Erro ao remover estado');
     }
   };
 
   const handleDeleteGlobalState = async (state: string) => {
-    if (onDeleteGlobalInProgressState) {
-      await onDeleteGlobalInProgressState(state);
-    } else {
-      await deleteInProgressState(state);
+    try {
+      if (onDeleteGlobalInProgressState) {
+        await onDeleteGlobalInProgressState(state);
+      } else {
+        await deleteInProgressState(state);
+      }
+      toast.success('Estado global removido com sucesso');
+    } catch (error) {
+      console.error('Error deleting global state:', error);
+      toast.error('Erro ao remover estado global');
     }
   };
 

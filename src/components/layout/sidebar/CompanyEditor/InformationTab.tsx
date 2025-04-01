@@ -16,6 +16,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DecorrerTab } from "./DecorrerTab";
+import { useMessages } from '@/context/MessageContext';
 
 interface InformationTabProps {
   form: UseFormReturn<{
@@ -53,6 +54,7 @@ export function InformationTab({
 }: InformationTabProps) {
   const [selectedJobPosition, setSelectedJobPosition] = useState<string>("none");
   const [currentJobPositions, setCurrentJobPositions] = useState<string[]>([]);
+  const { availableInProgressStates } = useMessages();
 
   useEffect(() => {
     // Initialize current positions from form
@@ -240,12 +242,12 @@ export function InformationTab({
         </Select>
       </div>
       
-      {company && setNewInProgressState && onAddInProgressState && onDeleteInProgressState && (
+      {company && (
         <div className="space-y-2 border-t pt-4">
           <h3 className="text-sm font-medium">Gerenciar Estados de Decorrer</h3>
           <DecorrerTab 
             company={company}
-            availableInProgressStates={[]}
+            availableInProgressStates={availableInProgressStates}
           />
         </div>
       )}
