@@ -79,6 +79,7 @@ import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
 import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
 import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
+import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
 export function AppSidebar() {
   const { 
@@ -128,7 +129,7 @@ export function AppSidebar() {
   const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
   const [newInProgressState, setNewInProgressState] = useState('');
   const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
-  const [showInProgressManager, setShowInProgressManager] = useState(false);
+  const [showDecorrerManager, setShowDecorrerManager] = useState(false);
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -353,11 +354,11 @@ export function AppSidebar() {
     }
   };
 
-  const handleAddGlobalInProgressState = () => {
-    if (newGlobalInProgressState.trim()) {
-      addInProgressState(newGlobalInProgressState);
+  const handleAddGlobalInProgressState = (state: string = newGlobalInProgressState) => {
+    if (state.trim()) {
+      addInProgressState(state);
       setNewGlobalInProgressState('');
-      toast.success(`Estado "${newGlobalInProgressState}" adicionado`);
+      toast.success(`Estado "${state}" adicionado`);
     }
   };
 
@@ -456,7 +457,7 @@ export function AppSidebar() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={() => setShowInProgressManager(true)} 
+                  onClick={() => setShowDecorrerManager(true)} 
                   className="h-6 px-2"
                 >
                   <Clock className="h-4 w-4" />
@@ -588,7 +589,7 @@ export function AppSidebar() {
                                 <Button 
                                   key={state}
                                   size="sm" 
-                                  variant={(filterType === 'inProgress' && state === state) ? "default" : "outline"}
+                                  variant={(filterType === 'inProgress') ? "default" : "outline"}
                                   className="text-xs h-7 justify-start w-full mb-1"
                                   onClick={() => filterByInProgress()}
                                 >
@@ -731,64 +732,47 @@ export function AppSidebar() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para gerenciar estados "em decorrer" */}
+      {/* Dialog para gerenciar estados "Decorrer" */}
       <Dialog
-        open={showInProgressManager}
-        onOpenChange={setShowInProgressManager}
+        open={showDecorrerManager}
+        onOpenChange={setShowDecorrerManager}
       >
         <DialogContent className="sm:max-w-md bg-background">
           <DialogHeader>
-            <DialogTitle>Gerenciar Estados em Decorrer</DialogTitle>
+            <DialogTitle>Gerenciar Estados Decorrer</DialogTitle>
             <DialogDescription>
-              Adicione ou remova estados de "em decorrer" disponíveis para todas as empresas.
+              Adicione ou remova estados de "Decorrer" disponíveis para todas as empresas.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="flex gap-2">
-              <Input
-                value={newGlobalInProgressState}
-                onChange={(e) => setNewGlobalInProgressState(e.target.value)}
-                placeholder="Novo estado"
-                className="flex-1"
-              />
-              <Button onClick={handleAddGlobalInProgressState}>Adicionar</Button>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Estados disponíveis</h3>
-              <ScrollArea className="h-[200px] pr-3">
-                {availableInProgressStates.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum estado cadastrado</p>
-                ) : (
-                  <div className="space-y-2">
-                    {availableInProgressStates.map(state => (
-                      <div key={state} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span>{state}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteGlobalInProgressState(state)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          </div>
+          <DecorrerTab
+            company={activeCompany || {} as Company} 
+            availableInProgressStates={availableInProgressStates}
+            onAddGlobalInProgressState={handleAddGlobalInProgressState}
+            onDeleteGlobalInProgressState={handleDeleteGlobalInProgressState}
+          />
           
           <DialogFooter>
-            <Button onClick={() => setShowInProgressManager(false)}>Fechar</Button>
+            <Button onClick={() => setShowDecorrerManager(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog para confirmar exclusão de empresa */}
+      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente a empresa {companyToDelete?.name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCompany}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog para editar empresa */}
       <Dialog 

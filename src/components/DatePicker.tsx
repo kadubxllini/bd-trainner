@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, X } from "lucide-react";
 import {
@@ -17,6 +17,20 @@ interface DatePickerProps {
 }
 
 const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
+  // Handler para garantir que a data seja correta
+  const handleDateSelect = (newDate: Date | undefined) => {
+    if (newDate) {
+      // Criar uma nova data ao meio-dia para evitar problemas de fuso horário
+      const normalizedDate = new Date(
+        newDate.getFullYear(),
+        newDate.getMonth(),
+        newDate.getDate(),
+        12, 0, 0
+      );
+      onDateChange(normalizedDate);
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -26,7 +40,7 @@ const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
           className="h-8 gap-1 bg-secondary/50 border-white/10"
         >
           <CalendarDays className="h-4 w-4" />
-          <span className="hidden sm:inline">{format(date, "dd/MM/yyyy", { locale: pt })}</span>
+          <span className="hidden sm:inline">{format(date, "dd/MM/yyyy", { locale: ptBR })}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -40,8 +54,8 @@ const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
           <Calendar
             mode="single"
             selected={date}
-            onSelect={(newDate) => newDate && onDateChange(newDate)}
-            locale={pt}
+            onSelect={handleDateSelect}
+            locale={ptBR}
             className="p-0 pointer-events-auto"
           />
         </div>

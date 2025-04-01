@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { pt } from "date-fns/locale";
+import { ptBR } from "date-fns/locale";
 import { useMessages } from "@/context/MessageContext";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, MessageSquare } from "lucide-react";
@@ -17,16 +17,16 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const { messages, activeCompany } = useMessages();
   
-  // Get dates with messages for highlighting in calendar
+  // Obter datas com mensagens para destaque no calendário
   const datesWithMessages = messages.reduce((dates: Date[], message) => {
     const messageDate = new Date(message.timestamp);
     
-    // Create new date with time set to midnight to avoid timezone issues
+    // Criar nova data com hora definida para meio-dia para evitar problemas de fuso horário
     const formattedDate = new Date(
       messageDate.getFullYear(),
       messageDate.getMonth(),
       messageDate.getDate(),
-      0, 0, 0, 0
+      12, 0, 0
     );
     
     if (!dates.some(date => 
@@ -42,12 +42,12 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
   
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
-      // Create a new Date object with time set to midnight to avoid timezone issues
+      // Criar um novo objeto Date com hora definida para meio-dia para evitar problemas de fuso horário
       const normalizedDate = new Date(
         date.getFullYear(),
         date.getMonth(),
         date.getDate(),
-        0, 0, 0, 0
+        12, 0, 0
       );
       setSelectedDate(normalizedDate);
       onSelectDate(normalizedDate);
@@ -81,7 +81,7 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
         mode="single"
         selected={selectedDate}
         onSelect={handleDateSelect}
-        locale={pt}
+        locale={ptBR}
         className="p-0 pointer-events-auto"
         modifiers={{
           highlighted: datesWithMessages
@@ -93,7 +93,7 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
       
       {selectedDate && (
         <div className="mt-2 text-center text-sm text-muted-foreground">
-          Visualizando mensagens de: <span className="font-medium">{format(selectedDate, "PPP", { locale: pt })}</span>
+          Visualizando mensagens de: <span className="font-medium">{format(selectedDate, "PPP", { locale: ptBR })}</span>
         </div>
       )}
     </div>
