@@ -11,16 +11,18 @@ import {
 } from "@/components/ui/select";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { DecorrerTab } from "./DecorrerTab";
 
 interface InformationTabProps {
   form: UseFormReturn<{
     name: string;
     jobPositions: string[];
     urgency: UrgencyLevel;
+    inProgress: string;
   }>;
   company: Company;
   availableJobPositions: string[];
@@ -29,6 +31,10 @@ interface InformationTabProps {
   handleJobPositionChange: (value: string) => void;
   applyCustomJobPosition: () => void;
   onSave: () => void;
+  newInProgressState?: string;
+  setNewInProgressState?: (value: string) => void;
+  onAddInProgressState?: () => void;
+  onDeleteInProgressState?: (id: string) => void;
 }
 
 export function InformationTab({
@@ -40,6 +46,10 @@ export function InformationTab({
   handleJobPositionChange,
   applyCustomJobPosition,
   onSave,
+  newInProgressState,
+  setNewInProgressState,
+  onAddInProgressState,
+  onDeleteInProgressState,
 }: InformationTabProps) {
   const [selectedJobPosition, setSelectedJobPosition] = useState<string>("none");
   const [currentJobPositions, setCurrentJobPositions] = useState<string[]>([]);
@@ -206,6 +216,16 @@ export function InformationTab({
           </SelectContent>
         </Select>
       </div>
+      
+      {company && setNewInProgressState && onAddInProgressState && onDeleteInProgressState && (
+        <div className="space-y-2 border-t pt-4">
+          <h3 className="text-sm font-medium">Estados de Decorrer</h3>
+          <DecorrerTab 
+            company={company}
+            availableInProgressStates={[]}
+          />
+        </div>
+      )}
       
       <Button className="w-full" onClick={handleSave}>
         Salvar alterações

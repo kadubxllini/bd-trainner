@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -23,6 +22,7 @@ import {
   User, 
   Filter,
   AlertCircle,
+  Clock,
   BriefcaseBusiness,
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -67,7 +67,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from "@/types";
+import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from "@/types";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -76,6 +76,7 @@ import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
 import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
 import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
+import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
 export function AppSidebar() {
   const { 
@@ -95,6 +96,9 @@ export function AppSidebar() {
     availableJobPositions,
     addJobPosition,
     deleteJobPosition,
+    availableInProgressStates,
+    addInProgressState,
+    deleteInProgressState,
   } = useMessages();
   
   const { user, signOut } = useAuth();
@@ -107,16 +111,19 @@ export function AppSidebar() {
   const [newPhone, setNewPhone] = useState('');
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'job' | 'urgency'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'job' | 'urgency' | 'inProgress'>('all');
   const [jobPositionFilter, setJobPositionFilter] = useState<string | null>(null);
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyLevel | null>(null);
+  const [inProgressFilter, setInProgressFilter] = useState<boolean>(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [customJobPosition, setCustomJobPosition] = useState('');
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
+  const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
   const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
+  const [showDecorrerManager, setShowDecorrerManager] = useState(false);
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -124,6 +131,7 @@ export function AppSidebar() {
       name: '',
       jobPositions: [] as string[],
       urgency: 'Média' as UrgencyLevel,
+      inProgress: ''
     }
   });
 
@@ -142,6 +150,10 @@ export function AppSidebar() {
         } else {
           filtered = filtered.filter(company => company.urgency);
         }
+      } else if (filterType === 'inProgress' && filtered.length > 0) {
+        filtered = filtered.filter(company => 
+          (company.inProgressStates && company.inProgressStates.length > 0)
+        );
       }
       
       setFilteredCompanies(filtered);
@@ -177,11 +189,15 @@ export function AppSidebar() {
         } else {
           filtered = filtered.filter(company => company.urgency);
         }
+      } else if (filterType === 'inProgress' && filtered.length > 0) {
+        filtered = filtered.filter(company => 
+          (company.inProgressStates && company.inProgressStates.length > 0)
+        );
       }
       
       setFilteredCompanies(filtered);
     }
-  }, [searchQuery, companies, filterType, urgencyFilter, jobPositionFilter]);
+  }, [searchQuery, companies, filterType, urgencyFilter, jobPositionFilter, inProgressFilter]);
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -197,6 +213,7 @@ export function AppSidebar() {
       name: company.name,
       jobPositions: company.jobPositions || [],
       urgency: company.urgency || 'Média',
+      inProgress: ''
     });
   };
 
@@ -356,6 +373,24 @@ export function AppSidebar() {
     await deleteCompanyContact(contactId);
   };
 
+  const filterByInProgress = () => {
+    setInProgressFilter(true);
+    setFilterType('inProgress');
+  };
+
+  const handleAddGlobalInProgressState = async () => {
+    if (newGlobalInProgressState.trim()) {
+      await addInProgressState(newGlobalInProgressState);
+      setNewGlobalInProgressState('');
+      toast.success(`Estado "${newGlobalInProgressState}" adicionado`);
+    }
+  };
+
+  const handleDeleteGlobalInProgressState = async (state: string) => {
+    await deleteInProgressState(state);
+    toast.success(`Estado "${state}" removido`);
+  };
+
   return (
     <Sidebar>
       <SidebarHeader className="py-6 flex items-center justify-between">
@@ -397,6 +432,14 @@ export function AppSidebar() {
                 >
                   <BriefcaseBusiness className="h-4 w-4" />
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowDecorrerManager(true)} 
+                  className="h-6 px-2"
+                >
+                  <Clock className="h-4 w-4" />
+                </Button>
                 {user && (
                   <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
                     <LogOut className="h-4 w-4" />
@@ -418,6 +461,7 @@ export function AppSidebar() {
                         setFilterType('all');
                         setUrgencyFilter(null);
                         setJobPositionFilter(null);
+                        setInProgressFilter(false);
                       }}
                     >
                       Todos
@@ -498,6 +542,47 @@ export function AppSidebar() {
                               <div className="w-2 h-2 rounded-full bg-red-500"></div>
                               Alta
                             </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          size="sm" 
+                          variant={filterType === 'inProgress' ? "default" : "outline"} 
+                          className="text-xs h-7 flex items-center gap-1" 
+                        >
+                          <Clock className="h-3 w-3" />
+                          Decorrer
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2 bg-background z-50" align="start">
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Selecione um estado:</p>
+                          <div className="flex flex-col space-y-1">
+                            <ScrollArea className="h-[200px] pr-3">
+                              {availableInProgressStates.map(state => (
+                                <Button 
+                                  key={state}
+                                  size="sm" 
+                                  variant={(filterType === 'inProgress') ? "default" : "outline"}
+                                  className="text-xs h-7 justify-start w-full mb-1"
+                                  onClick={filterByInProgress}
+                                >
+                                  {state}
+                                </Button>
+                              ))}
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-xs h-7 justify-start w-full mb-1"
+                                onClick={filterByInProgress}
+                              >
+                                Qualquer estado
+                              </Button>
+                            </ScrollArea>
                           </div>
                         </div>
                       </PopoverContent>
@@ -621,6 +706,32 @@ export function AppSidebar() {
           
           <DialogFooter>
             <Button onClick={() => setShowJobPositionsManager(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para gerenciar estados "Decorrer" */}
+      <Dialog
+        open={showDecorrerManager}
+        onOpenChange={setShowDecorrerManager}
+      >
+        <DialogContent className="sm:max-w-md bg-background">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Estados Decorrer</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova estados de "Decorrer" disponíveis para todas as empresas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DecorrerTab
+            company={activeCompany || {} as Company} 
+            availableInProgressStates={availableInProgressStates}
+            onAddGlobalInProgressState={handleAddGlobalInProgressState}
+            onDeleteGlobalInProgressState={handleDeleteGlobalInProgressState}
+          />
+          
+          <DialogFooter>
+            <Button onClick={() => setShowDecorrerManager(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel } from '@/types';
+import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from '@/types';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -25,8 +24,13 @@ interface MessageContextProps {
   deleteCompanyContact: (contactId: string) => Promise<void>;
   addJobPosition: (title: string) => Promise<void>;
   deleteJobPosition: (title: string) => Promise<void>;
-  isLoading: boolean;
   availableJobPositions: string[];
+  availableInProgressStates: string[];
+  addInProgressState: (state: string) => Promise<void>;
+  deleteInProgressState: (state: string) => Promise<void>;
+  addCompanyInProgressState: (companyId: string, state: string) => Promise<void>;
+  deleteCompanyInProgressState: (companyId: string, stateId: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
@@ -44,6 +48,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const queryClient = useQueryClient();
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [availableJobPositions, setAvailableJobPositions] = useState<string[]>([]);
+  const [availableInProgressStates, setAvailableInProgressStates] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchJobPositions = async () => {
@@ -65,6 +70,28 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     
     fetchJobPositions();
+  }, [user]);
+  
+  useEffect(() => {
+    const fetchInProgressStates = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .select('state')
+        .order('state', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching in progress states:', error);
+        return;
+      }
+      
+      if (data) {
+        setAvailableInProgressStates(data.map(item => item.state));
+      }
+    };
+    
+    fetchInProgressStates();
   }, [user]);
   
   const { 
@@ -89,12 +116,13 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         companiesData.map(async (company) => {
           const { data: companyDetailsData, error: companyDetailsError } = await supabase
             .from('companies')
-            .select('job_position, urgency')
+            .select('job_position, urgency, in_progress')
             .eq('id', company.id)
             .single();
             
           const jobPosition = companyDetailsData?.job_position || null;
           const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
+          const inProgress = companyDetailsData?.in_progress || undefined;
           
           const { data: emailsData, error: emailsError } = await supabase
             .from('company_emails')
@@ -122,12 +150,22 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (contactsError) {
             console.error('Error fetching contacts:', contactsError);
           }
+          
+          const { data: inProgressStatesData, error: inProgressStatesError } = await supabase
+            .from('company_in_progress_states')
+            .select('*')
+            .eq('company_id', company.id);
+            
+          if (inProgressStatesError) {
+            console.error('Error fetching in progress states:', inProgressStatesError);
+          }
 
           return {
             id: company.id,
             name: company.name,
             jobPositions: jobPosition ? [jobPosition] : [], // Convert old jobPosition to array
             urgency: urgency as UrgencyLevel,
+            inProgress: inProgress,
             emails: emailsData?.map(email => ({
               id: email.id,
               email: email.email,
@@ -142,6 +180,10 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
               id: contact.id,
               name: contact.name,
             })) || [],
+            inProgressStates: inProgressStatesData?.map(state => ({
+              id: state.id,
+              state: state.state,
+            })) || [],
             messages: []
           };
         })
@@ -151,45 +193,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     enabled: !!user
   });
-  
-  const { 
-    data: messages = [],
-    isLoading: isLoadingMessages
-  } = useQuery({
-    queryKey: ['messages', activeCompany?.id],
-    queryFn: async () => {
-      if (!user || !activeCompany) return [];
-      
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('company_id', activeCompany.id)
-        .order('timestamp', { ascending: true });
-      
-      if (error) {
-        toast.error(`Erro ao carregar mensagens: ${error.message}`);
-        throw error;
-      }
-      
-      return data.map(msg => ({
-        id: msg.id,
-        content: msg.content,
-        timestamp: new Date(msg.timestamp).getTime(),
-        fileAttachment: msg.file_url ? {
-          name: msg.file_name || 'Arquivo',
-          url: msg.file_url,
-          type: msg.file_type || 'application/octet-stream'
-        } : undefined
-      }));
-    },
-    enabled: !!user && !!activeCompany
-  });
-  
-  useEffect(() => {
-    if (!activeCompany && companies.length > 0) {
-      setActiveCompany(companies[0]);
-    }
-  }, [companies, activeCompany]);
   
   const createCompanyMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -223,6 +226,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updateData.job_position = data.jobPositions.length > 0 ? data.jobPositions[0] : null;
       }
       if (data.urgency !== undefined) updateData.urgency = data.urgency;
+      if (data.inProgress !== undefined) updateData.in_progress = data.inProgress;
       
       const { error } = await supabase
         .from('companies')
@@ -258,257 +262,86 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
   
-  const addEmailMutation = useMutation({
-    mutationFn: async ({ 
-      companyId, 
-      email, 
-      jobPosition, 
-      preference 
-    }: { 
-      companyId: string, 
-      email: string, 
-      jobPosition?: string, 
-      preference?: UrgencyLevel 
-    }) => {
-      const { error } = await supabase
-        .from('company_emails')
-        .insert({ 
-          company_id: companyId, 
-          email,
-          job_position: jobPosition,
-          preference
-        });
-      
-      if (error) throw error;
+  const addInProgressStateMutation = useMutation({
+    mutationFn: async (state: string) => {
+      return await addInProgressStateToDatabase(state);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Email adicionado');
+      queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      refreshInProgressStates();
     },
     onError: (error: any) => {
-      toast.error(`Erro ao adicionar email: ${error.message}`);
+      toast.error(`Erro ao adicionar estado: ${error.message}`);
     }
   });
   
-  const deleteEmailMutation = useMutation({
-    mutationFn: async (emailId: string) => {
+  const deleteInProgressStateMutation = useMutation({
+    mutationFn: async (state: string) => {
       const { error } = await supabase
-        .from('company_emails')
+        .from('in_progress_states')
         .delete()
-        .eq('id', emailId);
+        .eq('state', state);
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Email removido');
+      queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      refreshInProgressStates();
     },
     onError: (error: any) => {
-      toast.error(`Erro ao remover email: ${error.message}`);
-    }
-  });
-  
-  const addPhoneMutation = useMutation({
-    mutationFn: async ({ companyId, phone }: { companyId: string, phone: string }) => {
-      const { error } = await supabase
-        .from('company_phones')
-        .insert({ company_id: companyId, phone });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Telefone adicionado');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao adicionar telefone: ${error.message}`);
-    }
-  });
-  
-  const deletePhoneMutation = useMutation({
-    mutationFn: async (phoneId: string) => {
-      const { error } = await supabase
-        .from('company_phones')
-        .delete()
-        .eq('id', phoneId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Telefone removido');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao remover telefone: ${error.message}`);
-    }
-  });
-  
-  const addContactMutation = useMutation({
-    mutationFn: async ({ companyId, name }: { companyId: string, name: string }) => {
-      const { error } = await supabase
-        .from('company_contacts')
-        .insert({ company_id: companyId, name });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Contato adicionado');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao adicionar contato: ${error.message}`);
-    }
-  });
-  
-  const deleteContactMutation = useMutation({
-    mutationFn: async (contactId: string) => {
-      const { error } = await supabase
-        .from('company_contacts')
-        .delete()
-        .eq('id', contactId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Contato removido');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao remover contato: ${error.message}`);
-    }
-  });
-  
-  const addMessageMutation = useMutation({
-    mutationFn: async ({ 
-      content, 
-      fileAttachment,
-      customTimestamp
-    }: { 
-      content: string, 
-      fileAttachment?: Message['fileAttachment'],
-      customTimestamp?: number
-    }) => {
-      if (!user || !activeCompany) return;
-      
-      let fileData = null;
-      
-      if (fileAttachment) {
-        const fileName = fileAttachment.name;
-        const fileUrl = fileAttachment.url;
-        const fileType = fileAttachment.type;
-        
-        fileData = { file_name: fileName, file_url: fileUrl, file_type: fileType };
-      }
-      
-      const timestamp = customTimestamp 
-        ? new Date(customTimestamp).toISOString() 
-        : new Date().toISOString();
-      
-      const { data, error } = await supabase
-        .from('messages')
-        .insert({
-          content: content.trim() || (fileAttachment ? '📎 Arquivo anexado' : ''),
-          company_id: activeCompany.id,
-          user_id: user.id,
-          timestamp,
-          ...fileData
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
-      toast.success('Mensagem enviada');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao enviar mensagem: ${error.message}`);
-    }
-  });
-  
-  const updateMessageMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string, data: Partial<Message> }) => {
-      const { error } = await supabase
-        .from('messages')
-        .update({ content: data.content })
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
-      toast.success('Mensagem atualizada');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao atualizar mensagem: ${error.message}`);
-    }
-  });
-  
-  const deleteMessageMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('messages')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', activeCompany?.id] });
-      toast.success('Mensagem removida');
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao remover mensagem: ${error.message}`);
+      toast.error(`Erro ao remover estado: ${error.message}`);
     }
   });
 
-  const addJobPositionMutation = useMutation({
-    mutationFn: async (title: string) => {
-      return await addJobPositionToDatabase(title);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
-      refreshJobPositions();
-    },
-    onError: (error: any) => {
-      toast.error(`Erro ao adicionar vaga: ${error.message}`);
-    }
-  });
-
-  const deleteJobPositionMutation = useMutation({
-    mutationFn: async (title: string) => {
+  const addCompanyInProgressStateMutation = useMutation({
+    mutationFn: async ({ companyId, state }: { companyId: string, state: string }) => {
       const { error } = await supabase
-        .from('job_positions')
-        .delete()
-        .eq('title', title);
+        .from('company_in_progress_states')
+        .insert({ company_id: companyId, state });
       
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['jobPositions'] });
-      refreshJobPositions();
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Estado adicionado');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao remover vaga: ${error.message}`);
+      toast.error(`Erro ao adicionar estado: ${error.message}`);
+    }
+  });
+  
+  const deleteCompanyInProgressStateMutation = useMutation({
+    mutationFn: async ({ companyId, stateId }: { companyId: string, stateId: string }) => {
+      const { error } = await supabase
+        .from('company_in_progress_states')
+        .delete()
+        .eq('id', stateId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Estado removido');
+    },
+    onError: (error: any) => {
+      toast.error(`Erro ao remover estado: ${error.message}`);
     }
   });
 
-  const addJobPositionToDatabase = async (title: string) => {
-    const { data: existingPosition } = await supabase
-      .from('job_positions')
+  const addInProgressStateToDatabase = async (state: string) => {
+    const { data: existingState } = await supabase
+      .from('in_progress_states')
       .select('*')
-      .eq('title', title)
+      .eq('state', state)
       .single();
 
-    if (existingPosition) {
-      return existingPosition;
+    if (existingState) {
+      return existingState;
     }
 
     const { data, error } = await supabase
-      .from('job_positions')
-      .insert({ title })
+      .from('in_progress_states')
+      .insert({ state })
       .select()
       .single();
     
@@ -516,21 +349,21 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return data;
   };
 
-  const refreshJobPositions = async () => {
+  const refreshInProgressStates = async () => {
     if (!user) return;
     
     const { data, error } = await supabase
-      .from('job_positions')
-      .select('title')
-      .order('title', { ascending: true });
+      .from('in_progress_states')
+      .select('state')
+      .order('state', { ascending: true });
     
     if (error) {
-      console.error('Error fetching job positions:', error);
+      console.error('Error fetching in progress states:', error);
       return;
     }
     
     if (data) {
-      setAvailableJobPositions(data.map(job => job.title));
+      setAvailableInProgressStates(data.map(item => item.state));
     }
   };
 
@@ -571,29 +404,29 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => {
     if (!email.trim()) return;
-    await addEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
+    await addCompanyEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
   };
 
   const deleteCompanyEmail = async (emailId: string) => {
-    await deleteEmailMutation.mutateAsync(emailId);
+    await deleteCompanyEmailMutation.mutateAsync(emailId);
   };
 
   const addCompanyPhone = async (companyId: string, phone: string) => {
     if (!phone.trim()) return;
-    await addPhoneMutation.mutateAsync({ companyId, phone });
+    await addCompanyPhoneMutation.mutateAsync({ companyId, phone });
   };
 
   const deleteCompanyPhone = async (phoneId: string) => {
-    await deletePhoneMutation.mutateAsync(phoneId);
+    await deleteCompanyPhoneMutation.mutateAsync(phoneId);
   };
 
   const addCompanyContact = async (companyId: string, name: string) => {
     if (!name.trim()) return;
-    await addContactMutation.mutateAsync({ companyId, name });
+    await addCompanyContactMutation.mutateAsync({ companyId, name });
   };
 
   const deleteCompanyContact = async (contactId: string) => {
-    await deleteContactMutation.mutateAsync(contactId);
+    await deleteCompanyContactMutation.mutateAsync(contactId);
   };
 
   const addMessage = async (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => {
@@ -618,6 +451,24 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await deleteJobPositionMutation.mutateAsync(title);
   };
 
+  const addInProgressState = async (state: string) => {
+    if (!state.trim()) return;
+    await addInProgressStateMutation.mutateAsync(state);
+  };
+
+  const deleteInProgressState = async (state: string) => {
+    await deleteInProgressStateMutation.mutateAsync(state);
+  };
+
+  const addCompanyInProgressState = async (companyId: string, state: string) => {
+    if (!state.trim()) return;
+    await addCompanyInProgressStateMutation.mutateAsync({ companyId, state });
+  };
+
+  const deleteCompanyInProgressState = async (companyId: string, stateId: string) => {
+    await deleteCompanyInProgressStateMutation.mutateAsync({ companyId, stateId });
+  };
+
   return (
     <MessageContext.Provider
       value={{
@@ -639,8 +490,13 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteCompanyContact,
         addJobPosition,
         deleteJobPosition,
-        isLoading: isLoadingCompanies || isLoadingMessages,
         availableJobPositions,
+        availableInProgressStates,
+        addInProgressState,
+        deleteInProgressState,
+        addCompanyInProgressState,
+        deleteCompanyInProgressState,
+        isLoading: isLoadingCompanies || isLoadingMessages,
       }}
     >
       {children}
