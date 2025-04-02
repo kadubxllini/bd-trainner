@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { useMessages } from '@/context/MessageContext';
-import { Company, InProgressState } from '@/types';
+import { Company } from '@/types';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Clock, Trash, Plus } from "lucide-react";
+import { Clock, Trash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -120,43 +119,5 @@ export function DecorrerTab({
   }
 
   // If being used in the company information tab
-  return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-medium">Estados de Decorrer</h3>
-      
-      <div className="flex gap-2">
-        <Input
-          value={newState}
-          onChange={(e) => setNewState(e.target.value)}
-          placeholder="Novo estado"
-          className="flex-1"
-        />
-        <Button onClick={handleAddState}>Adicionar</Button>
-      </div>
-
-      {company.inProgressStates?.length > 0 ? (
-        <ScrollArea className="h-20 p-2 border rounded-md">
-          <div className="flex flex-wrap gap-2">
-            {company.inProgressStates.map((state) => (
-              <Badge key={state.id} variant="secondary" className="flex items-center gap-1">
-                {state.description}
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-4 w-4 p-0" 
-                  onClick={() => handleDeleteState(state.id)}
-                >
-                  <Trash className="h-3 w-3" />
-                </Button>
-              </Badge>
-            ))}
-          </div>
-        </ScrollArea>
-      ) : (
-        <div className="text-sm text-muted-foreground">
-          Nenhum estado adicionado
-        </div>
-      )}
-    </div>
-  );
+  return null;
 }

@@ -15,7 +15,6 @@ import { X, Plus, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DecorrerTab } from "./DecorrerTab";
 import { useMessages } from '@/context/MessageContext';
 
 interface InformationTabProps {
@@ -230,27 +229,17 @@ export function InformationTab({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Nenhum</SelectItem>
-            {company && company.inProgressStates && company.inProgressStates.map((state) => (
-              <SelectItem key={state.id} value={state.description}>
+            {availableInProgressStates.map((state) => (
+              <SelectItem key={state} value={state}>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4" />
-                  <span>{state.description}</span>
+                  <span>{state}</span>
                 </div>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-      
-      {company && (
-        <div className="space-y-2 border-t pt-4">
-          <h3 className="text-sm font-medium">Gerenciar Estados de Decorrer</h3>
-          <DecorrerTab 
-            company={company}
-            availableInProgressStates={availableInProgressStates}
-          />
-        </div>
-      )}
       
       <Button className="w-full" onClick={handleSave}>
         Salvar alterações
