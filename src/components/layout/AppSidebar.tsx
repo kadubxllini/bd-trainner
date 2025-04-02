@@ -378,15 +378,25 @@ export function AppSidebar() {
 
   const handleAddGlobalInProgressState = async () => {
     if (newGlobalInProgressState.trim()) {
-      await addInProgressState(newGlobalInProgressState);
-      setNewGlobalInProgressState('');
-      toast.success(`Estado "${newGlobalInProgressState}" adicionado`);
+      try {
+        await addInProgressState(newGlobalInProgressState);
+        setNewGlobalInProgressState('');
+        toast.success(`Estado "${newGlobalInProgressState}" adicionado`);
+      } catch (error) {
+        console.error('Error adding in-progress state:', error);
+        toast.error('Erro ao adicionar estado');
+      }
     }
   };
 
   const handleDeleteGlobalInProgressState = async (state: string) => {
-    await deleteInProgressState(state);
-    toast.success(`Estado "${state}" removido`);
+    try {
+      await deleteInProgressState(state);
+      toast.success(`Estado "${state}" removido`);
+    } catch (error) {
+      console.error('Error deleting in-progress state:', error);
+      toast.error('Erro ao remover estado');
+    }
   };
 
   return (
