@@ -8,7 +8,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 interface MessageContextProps {
   companies: Company[];
   activeCompany: Company | null;
-  messages: Message[]; // Added messages array to the interface
+  messages: Message[];
   addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
   updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
@@ -72,7 +72,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     fetchJobPositions();
   }, [user]);
 
-  // Query for in-progress states
   const { 
     data: inProgressStatesData = [],
     isLoading: isLoadingInProgressStates,
@@ -82,22 +81,29 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
-        .from('in_progress_states')
-        .select('description')
-        .order('description', { ascending: true });
-      
-      if (error) {
-        console.error('Error fetching in progress states:', error);
+      try {
+        const { data, error } = await supabase
+          .from('in_progress_states')
+          .select('description')
+          .order('description', { ascending: true });
+        
+        if (error) {
+          console.error('Error fetching in progress states:', error);
+          return [];
+        }
+        
+        if (data) {
+          const descriptions = data.map(item => item.description);
+          setAvailableInProgressStates(descriptions);
+          console.log("Fetched in-progress states:", descriptions);
+          return descriptions;
+        }
+        
+        return [];
+      } catch (err) {
+        console.error('Exception fetching in progress states:', err);
         return [];
       }
-      
-      if (data) {
-        setAvailableInProgressStates(data.map(item => item.description));
-        return data.map(item => item.description);
-      }
-      
-      return [];
     },
     enabled: !!user
   });
@@ -177,7 +183,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: company.id,
             name: company.name,
-            jobPositions: jobPosition ? [jobPosition] : [], // Convert old jobPosition to array
+            jobPositions: jobPosition ? [jobPosition] : [],
             urgency: urgency as UrgencyLevel,
             inProgress: inProgress,
             emails: emailsData?.map(email => ({
@@ -208,7 +214,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: !!user
   });
 
-  // Query for messages based on the active company
   const { 
     data: messagesData = [], 
     isLoading: isLoadingMessages 
@@ -243,7 +248,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: !!user && !!activeCompany
   });
   
-  // Define all mutations
   const createCompanyMutation = useMutation({
     mutationFn: async (name: string) => {
       if (!user) throw new Error("Usuário não autenticado");
@@ -272,7 +276,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (data.name) updateData.name = data.name;
       if (data.jobPositions !== undefined) {
-        // Store only the first job position in the old field for backward compatibility
         updateData.job_position = data.jobPositions.length > 0 ? data.jobPositions[0] : null;
       }
       if (data.urgency !== undefined) updateData.urgency = data.urgency;
@@ -319,16 +322,19 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return data;
     },
     onSuccess: () => {
+      console.log("Successfully added in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
+      console.error("Error in addInProgressStateMutation:", error);
       toast.error(`Erro ao adicionar estado: ${error.message}`);
     }
   });
   
   const deleteInProgressStateMutation = useMutation({
     mutationFn: async (state: string) => {
+      console.log("Deleting state from database:", state);
       const { error } = await supabase
         .from('in_progress_states')
         .delete()
@@ -337,10 +343,12 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (error) throw error;
     },
     onSuccess: () => {
+      console.log("Successfully deleted in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
+      console.error("Error in deleteInProgressStateMutation:", error);
       toast.error(`Erro ao remover estado: ${error.message}`);
     }
   });
@@ -381,37 +389,46 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const addInProgressStateToDatabase = async (state: string) => {
-    // Check if state already exists to avoid duplicates
-    const { data: existingState, error: checkError } = await supabase
-      .from('in_progress_states')
-      .select('*')
-      .eq('description', state)
-      .single();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error("Error checking existing state:", checkError);
-      return { error: checkError };
-    }
-
-    if (existingState) {
-      console.log("State already exists:", existingState);
-      return { data: existingState, error: null };
-    }
-
-    console.log("Adding new state to database:", state);
-    const { data, error } = await supabase
-      .from('in_progress_states')
-      .insert({ description: state })
-      .select()
-      .single();
+    console.log("Adding state to database:", state);
     
-    if (error) {
-      console.error("Error adding state to database:", error);
-      return { error };
+    try {
+      const { data: existingState, error: checkError } = await supabase
+        .from('in_progress_states')
+        .select('*')
+        .eq('description', state)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Error checking existing state:", checkError);
+        return { error: checkError };
+      }
+
+      if (existingState) {
+        console.log("State already exists:", existingState);
+        return { data: existingState, error: null };
+      }
+
+      console.log("Adding new state to database:", state);
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .insert({ description: state })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Error adding state to database:", error);
+        return { error };
+      }
+      
+      console.log("State added successfully:", data);
+      
+      await refreshInProgressStates();
+      
+      return { data, error: null };
+    } catch (err) {
+      console.error("Exception in addInProgressStateToDatabase:", err);
+      return { data: null, error: err };
     }
-    
-    console.log("State added successfully:", data);
-    return { data, error: null };
   };
 
   const refreshInProgressStates = async () => {
@@ -430,8 +447,9 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       
       if (data) {
-        console.log("Refreshed in-progress states:", data);
-        setAvailableInProgressStates(data.map(item => item.description));
+        const descriptions = data.map(item => item.description);
+        console.log("Refreshed in-progress states:", descriptions);
+        setAvailableInProgressStates(descriptions);
       }
     } catch (err) {
       console.error("Error refreshing in-progress states:", err);
@@ -490,14 +508,22 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addInProgressState = async (state: string) => {
     if (!state.trim()) return;
     console.log("Adding in-progress state:", state);
-    await addInProgressStateMutation.mutateAsync(state);
-    await refreshInProgressStates();
+    try {
+      await addInProgressStateMutation.mutateAsync(state);
+      await refreshInProgressStates();
+    } catch (error) {
+      console.error("Error in addInProgressState:", error);
+    }
   };
 
   const deleteInProgressState = async (state: string) => {
     console.log("Deleting in-progress state:", state);
-    await deleteInProgressStateMutation.mutateAsync(state);
-    await refreshInProgressStates();
+    try {
+      await deleteInProgressStateMutation.mutateAsync(state);
+      await refreshInProgressStates();
+    } catch (error) {
+      console.error("Error in deleteInProgressState:", error);
+    }
   };
 
   const addCompanyInProgressState = async (companyId: string, state: string) => {
@@ -509,7 +535,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await deleteCompanyInProgressStateMutation.mutateAsync({ companyId, stateId });
   };
 
-  // Add email mutation
   const addCompanyEmailMutation = useMutation({
     mutationFn: async ({ companyId, email, jobPosition, preference }: 
       { companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel }) => {
@@ -528,7 +553,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Delete email mutation
   const deleteCompanyEmailMutation = useMutation({
     mutationFn: async (emailId: string) => {
       const { error } = await supabase
@@ -547,7 +571,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Add phone mutation
   const addCompanyPhoneMutation = useMutation({
     mutationFn: async ({ companyId, phone }: { companyId: string, phone: string }) => {
       const { error } = await supabase
@@ -565,7 +588,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Delete phone mutation
   const deleteCompanyPhoneMutation = useMutation({
     mutationFn: async (phoneId: string) => {
       const { error } = await supabase
@@ -584,7 +606,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Add contact mutation
   const addCompanyContactMutation = useMutation({
     mutationFn: async ({ companyId, name }: { companyId: string, name: string }) => {
       const { error } = await supabase
@@ -602,7 +623,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Delete contact mutation
   const deleteCompanyContactMutation = useMutation({
     mutationFn: async (contactId: string) => {
       const { error } = await supabase
@@ -621,7 +641,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Add message mutation
   const addMessageMutation = useMutation({
     mutationFn: async ({ content, fileAttachment, customTimestamp }: 
       { content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number }) => {
@@ -651,7 +670,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Update message mutation
   const updateMessageMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: Partial<Message> }) => {
       const updateData: any = {};
@@ -674,7 +692,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Delete message mutation
   const deleteMessageMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -693,7 +710,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   });
 
-  // Job position mutations
   const addJobPositionMutation = useMutation({
     mutationFn: async (title: string) => {
       const { error } = await supabase
@@ -702,7 +718,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (error) throw error;
       
-      // Refresh the job positions list
       const { data } = await supabase
         .from('job_positions')
         .select('title')
@@ -729,7 +744,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (error) throw error;
       
-      // Refresh the job positions list
       const { data } = await supabase
         .from('job_positions')
         .select('title')
@@ -787,7 +801,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         companies,
         activeCompany,
-        messages: messagesData, // Provide the messages data from the query
+        messages: messagesData,
         addMessage,
         deleteMessage,
         updateMessage,

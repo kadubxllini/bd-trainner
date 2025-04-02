@@ -34,10 +34,12 @@ export function DecorrerTab({
     try {
       if (onAddGlobalInProgressState) {
         await onAddGlobalInProgressState(newState);
+        console.log("Added global in-progress state:", newState);
       } else if (company && company.id) {
         await addCompanyInProgressState(company.id, newState);
       } else {
         await addInProgressState(newState);
+        console.log("Added in-progress state via context:", newState);
       }
 
       setNewState('');
@@ -64,8 +66,10 @@ export function DecorrerTab({
     try {
       if (onDeleteGlobalInProgressState) {
         await onDeleteGlobalInProgressState(state);
+        console.log("Deleted global in-progress state:", state);
       } else {
         await deleteInProgressState(state);
+        console.log("Deleted in-progress state via context:", state);
       }
       toast.success('Estado global removido com sucesso');
     } catch (error) {
@@ -84,6 +88,11 @@ export function DecorrerTab({
             onChange={(e) => setNewState(e.target.value)}
             placeholder="Novo estado"
             className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAddState();
+              }
+            }}
           />
           <Button onClick={handleAddState}>Adicionar</Button>
         </div>
