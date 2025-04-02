@@ -355,6 +355,16 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addCompanyInProgressStateMutation = useMutation({
     mutationFn: async ({ companyId, state }: { companyId: string, state: string }) => {
+      console.log(`Adding in-progress state '${state}' to company with ID ${companyId}`);
+      
+      if (!state.trim()) {
+        throw new Error("Estado não pode estar vazio");
+      }
+      
+      if (!companyId) {
+        throw new Error("ID da empresa não fornecido");
+      }
+
       const { error } = await supabase
         .from('company_in_progress')
         .insert({ company_id: companyId, description: state });
@@ -363,10 +373,10 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Estado adicionado');
+      toast.success('Estado adicionado à empresa');
     },
     onError: (error: any) => {
-      toast.error(`Erro ao adicionar estado: ${error.message}`);
+      toast.error(`Erro ao adicionar estado à empresa: ${error.message}`);
     }
   });
   
@@ -506,13 +516,18 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addInProgressState = async (state: string) => {
-    if (!state.trim()) return;
+    if (!state.trim()) {
+      toast.error("Digite um estado para adicionar");
+      return;
+    }
+    
     console.log("Adding in-progress state:", state);
     try {
       await addInProgressStateMutation.mutateAsync(state);
       await refreshInProgressStates();
     } catch (error) {
       console.error("Error in addInProgressState:", error);
+      toast.error(`Erro ao adicionar estado: ${error instanceof Error ? error.message : 'Desconhecido'}`);
     }
   };
 
@@ -523,11 +538,22 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await refreshInProgressStates();
     } catch (error) {
       console.error("Error in deleteInProgressState:", error);
+      toast.error(`Erro ao remover estado: ${error instanceof Error ? error.message : 'Desconhecido'}`);
     }
   };
 
   const addCompanyInProgressState = async (companyId: string, state: string) => {
-    if (!state.trim()) return;
+    if (!state.trim()) {
+      toast.error("Digite um estado para adicionar");
+      return;
+    }
+    
+    if (!companyId) {
+      toast.error("ID da empresa não fornecido");
+      return;
+    }
+    
+    console.log(`Adding in-progress state '${state}' to company with ID ${companyId}`);
     await addCompanyInProgressStateMutation.mutateAsync({ companyId, state });
   };
 

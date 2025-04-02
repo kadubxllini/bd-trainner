@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Company } from '@/types';
@@ -33,13 +32,15 @@ export function DecorrerTab({
 
     try {
       if (onAddGlobalInProgressState) {
+        console.log("Adding global in-progress state via prop:", newState);
         await onAddGlobalInProgressState(newState);
-        console.log("Added global in-progress state:", newState);
       } else if (company && company.id) {
+        console.log("Adding company-specific in-progress state:", newState);
         await addCompanyInProgressState(company.id, newState);
       } else {
-        await addInProgressState(newState);
-        console.log("Added in-progress state via context:", newState);
+        console.error("Company ID is undefined or company is null");
+        toast.error("Erro ao identificar empresa");
+        return;
       }
 
       setNewState('');
@@ -51,11 +52,16 @@ export function DecorrerTab({
   };
 
   const handleDeleteState = async (stateId: string) => {
+    if (!company || !company.id) {
+      console.error("Company ID is undefined or company is null");
+      toast.error("Erro ao identificar empresa");
+      return;
+    }
+
     try {
-      if (company && company.id) {
-        await deleteCompanyInProgressState(company.id, stateId);
-        toast.success('Estado removido com sucesso');
-      }
+      console.log("Deleting company-specific in-progress state:", stateId);
+      await deleteCompanyInProgressState(company.id, stateId);
+      toast.success('Estado removido com sucesso');
     } catch (error) {
       console.error('Error deleting state:', error);
       toast.error('Erro ao remover estado');
@@ -65,12 +71,14 @@ export function DecorrerTab({
   const handleDeleteGlobalState = async (state: string) => {
     try {
       if (onDeleteGlobalInProgressState) {
+        console.log("Deleting global in-progress state via prop:", state);
         await onDeleteGlobalInProgressState(state);
-        console.log("Deleted global in-progress state:", state);
       } else {
-        await deleteInProgressState(state);
-        console.log("Deleted in-progress state via context:", state);
+        console.error("onDeleteGlobalInProgressState is not defined, but attempting to delete global state");
+        toast.error("Operação não permitida");
+        return;
       }
+      
       toast.success('Estado global removido com sucesso');
     } catch (error) {
       console.error('Error deleting global state:', error);
@@ -78,7 +86,6 @@ export function DecorrerTab({
     }
   };
 
-  // If being used in the global manager mode
   if (onAddGlobalInProgressState) {
     return (
       <div className="space-y-4 py-4">
@@ -128,6 +135,65 @@ export function DecorrerTab({
     );
   }
 
-  // If being used in the company information tab
-  return null;
+  return (
+    <div className="space-y-4 py-4">
+      <div className="flex gap-2">
+        <Input
+          value={newState}
+          onChange={(e) => setNewState(e.target.value)}
+          placeholder="Novo estado para esta empresa"
+          className="flex-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleAddState();
+            }
+          }}
+        />
+        <Button onClick={handleAddState}>Adicionar</Button>
+      </div>
+      
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium">Estados desta empresa</h3>
+        <ScrollArea className="h-[200px] pr-3">
+          {company.inProgressStates && company.inProgressStates.length > 0 ? (
+            <div className="space-y-2">
+              {company.inProgressStates.map(state => (
+                <div key={state.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span>{state.description}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleDeleteState(state.id)} 
+                    className="h-7 w-7 hover:text-destructive"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum estado adicionado para esta empresa</p>
+          )}
+        </ScrollArea>
+      </div>
+      
+      <div className="space-y-2 mt-6">
+        <h3 className="text-sm font-medium">Estados disponíveis globalmente</h3>
+        <ScrollArea className="h-[150px] pr-3">
+          {availableInProgressStates.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum estado global cadastrado</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {availableInProgressStates.map(state => (
+                <Badge key={state} variant="secondary">{state}</Badge>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
+    </div>
+  );
 }
