@@ -71,10 +71,16 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     fetchJobPositions();
   }, [user]);
-  
-  useEffect(() => {
-    const fetchInProgressStates = async () => {
-      if (!user) return;
+
+  // Query for in-progress states
+  const { 
+    data: inProgressStatesData = [],
+    isLoading: isLoadingInProgressStates,
+    refetch: refetchInProgressStates
+  } = useQuery({
+    queryKey: ['inProgressStates'],
+    queryFn: async () => {
+      if (!user) return [];
       
       const { data, error } = await supabase
         .from('in_progress_states')
@@ -83,16 +89,24 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (error) {
         console.error('Error fetching in progress states:', error);
-        return;
+        return [];
       }
       
       if (data) {
         setAvailableInProgressStates(data.map(item => item.description));
+        return data.map(item => item.description);
       }
-    };
-    
-    fetchInProgressStates();
-  }, [user]);
+      
+      return [];
+    },
+    enabled: !!user
+  });
+
+  useEffect(() => {
+    if (inProgressStatesData.length > 0) {
+      setAvailableInProgressStates(inProgressStatesData);
+    }
+  }, [inProgressStatesData]);
   
   const { 
     data: companies = [], 
@@ -300,11 +314,13 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   
   const addInProgressStateMutation = useMutation({
     mutationFn: async (state: string) => {
-      return await addInProgressStateToDatabase(state);
+      const { data, error } = await addInProgressStateToDatabase(state);
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
-      refreshInProgressStates();
+      refetchInProgressStates();
     },
     onError: (error: any) => {
       toast.error(`Erro ao adicionar estado: ${error.message}`);
@@ -322,7 +338,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
-      refreshInProgressStates();
+      refetchInProgressStates();
     },
     onError: (error: any) => {
       toast.error(`Erro ao remover estado: ${error.message}`);
@@ -365,42 +381,132 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   });
 
   const addInProgressStateToDatabase = async (state: string) => {
-    const { data: existingState } = await supabase
+    // Check if state already exists to avoid duplicates
+    const { data: existingState, error: checkError } = await supabase
       .from('in_progress_states')
       .select('*')
       .eq('description', state)
       .single();
 
-    if (existingState) {
-      return existingState;
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error("Error checking existing state:", checkError);
+      return { error: checkError };
     }
 
+    if (existingState) {
+      console.log("State already exists:", existingState);
+      return { data: existingState, error: null };
+    }
+
+    console.log("Adding new state to database:", state);
     const { data, error } = await supabase
       .from('in_progress_states')
       .insert({ description: state })
       .select()
       .single();
     
-    if (error) throw error;
-    return data;
+    if (error) {
+      console.error("Error adding state to database:", error);
+      return { error };
+    }
+    
+    console.log("State added successfully:", data);
+    return { data, error: null };
   };
 
   const refreshInProgressStates = async () => {
+    console.log("Refreshing in-progress states...");
     if (!user) return;
     
-    const { data, error } = await supabase
-      .from('in_progress_states')
-      .select('description')
-      .order('description', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching in progress states:', error);
-      return;
+    try {
+      const { data, error } = await supabase
+        .from('in_progress_states')
+        .select('description')
+        .order('description', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching in progress states:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log("Refreshed in-progress states:", data);
+        setAvailableInProgressStates(data.map(item => item.description));
+      }
+    } catch (err) {
+      console.error("Error refreshing in-progress states:", err);
     }
-    
-    if (data) {
-      setAvailableInProgressStates(data.map(item => item.description));
-    }
+  };
+
+  const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => {
+    if (!email.trim()) return;
+    await addCompanyEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
+  };
+
+  const deleteCompanyEmail = async (emailId: string) => {
+    await deleteCompanyEmailMutation.mutateAsync(emailId);
+  };
+
+  const addCompanyPhone = async (companyId: string, phone: string) => {
+    if (!phone.trim()) return;
+    await addCompanyPhoneMutation.mutateAsync({ companyId, phone });
+  };
+
+  const deleteCompanyPhone = async (phoneId: string) => {
+    await deleteCompanyPhoneMutation.mutateAsync(phoneId);
+  };
+
+  const addCompanyContact = async (companyId: string, name: string) => {
+    if (!name.trim()) return;
+    await addCompanyContactMutation.mutateAsync({ companyId, name });
+  };
+
+  const deleteCompanyContact = async (contactId: string) => {
+    await deleteCompanyContactMutation.mutateAsync(contactId);
+  };
+
+  const addMessage = async (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => {
+    if ((!content.trim() && !fileAttachment) || !activeCompany) return;
+    await addMessageMutation.mutateAsync({ content, fileAttachment, customTimestamp });
+  };
+
+  const updateMessage = async (id: string, data: Partial<Message>) => {
+    await updateMessageMutation.mutateAsync({ id, data });
+  };
+
+  const deleteMessage = async (id: string) => {
+    await deleteMessageMutation.mutateAsync(id);
+  };
+
+  const addJobPosition = async (title: string) => {
+    if (!title.trim()) return;
+    await addJobPositionMutation.mutateAsync(title);
+  };
+
+  const deleteJobPosition = async (title: string) => {
+    await deleteJobPositionMutation.mutateAsync(title);
+  };
+
+  const addInProgressState = async (state: string) => {
+    if (!state.trim()) return;
+    console.log("Adding in-progress state:", state);
+    await addInProgressStateMutation.mutateAsync(state);
+    await refreshInProgressStates();
+  };
+
+  const deleteInProgressState = async (state: string) => {
+    console.log("Deleting in-progress state:", state);
+    await deleteInProgressStateMutation.mutateAsync(state);
+    await refreshInProgressStates();
+  };
+
+  const addCompanyInProgressState = async (companyId: string, state: string) => {
+    if (!state.trim()) return;
+    await addCompanyInProgressStateMutation.mutateAsync({ companyId, state });
+  };
+
+  const deleteCompanyInProgressState = async (companyId: string, stateId: string) => {
+    await deleteCompanyInProgressStateMutation.mutateAsync({ companyId, stateId });
   };
 
   // Add email mutation
@@ -676,73 +782,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addCompanyEmail = async (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => {
-    if (!email.trim()) return;
-    await addCompanyEmailMutation.mutateAsync({ companyId, email, jobPosition, preference });
-  };
-
-  const deleteCompanyEmail = async (emailId: string) => {
-    await deleteCompanyEmailMutation.mutateAsync(emailId);
-  };
-
-  const addCompanyPhone = async (companyId: string, phone: string) => {
-    if (!phone.trim()) return;
-    await addCompanyPhoneMutation.mutateAsync({ companyId, phone });
-  };
-
-  const deleteCompanyPhone = async (phoneId: string) => {
-    await deleteCompanyPhoneMutation.mutateAsync(phoneId);
-  };
-
-  const addCompanyContact = async (companyId: string, name: string) => {
-    if (!name.trim()) return;
-    await addCompanyContactMutation.mutateAsync({ companyId, name });
-  };
-
-  const deleteCompanyContact = async (contactId: string) => {
-    await deleteCompanyContactMutation.mutateAsync(contactId);
-  };
-
-  const addMessage = async (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => {
-    if ((!content.trim() && !fileAttachment) || !activeCompany) return;
-    await addMessageMutation.mutateAsync({ content, fileAttachment, customTimestamp });
-  };
-
-  const updateMessage = async (id: string, data: Partial<Message>) => {
-    await updateMessageMutation.mutateAsync({ id, data });
-  };
-
-  const deleteMessage = async (id: string) => {
-    await deleteMessageMutation.mutateAsync(id);
-  };
-
-  const addJobPosition = async (title: string) => {
-    if (!title.trim()) return;
-    await addJobPositionMutation.mutateAsync(title);
-  };
-
-  const deleteJobPosition = async (title: string) => {
-    await deleteJobPositionMutation.mutateAsync(title);
-  };
-
-  const addInProgressState = async (state: string) => {
-    if (!state.trim()) return;
-    await addInProgressStateMutation.mutateAsync(state);
-  };
-
-  const deleteInProgressState = async (state: string) => {
-    await deleteInProgressStateMutation.mutateAsync(state);
-  };
-
-  const addCompanyInProgressState = async (companyId: string, state: string) => {
-    if (!state.trim()) return;
-    await addCompanyInProgressStateMutation.mutateAsync({ companyId, state });
-  };
-
-  const deleteCompanyInProgressState = async (companyId: string, stateId: string) => {
-    await deleteCompanyInProgressStateMutation.mutateAsync({ companyId, stateId });
-  };
-
   return (
     <MessageContext.Provider
       value={{
@@ -770,7 +809,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteInProgressState,
         addCompanyInProgressState,
         deleteCompanyInProgressState,
-        isLoading: isLoadingCompanies || isLoadingMessages,
+        isLoading: isLoadingCompanies || isLoadingMessages || isLoadingInProgressStates,
       }}
     >
       {children}
