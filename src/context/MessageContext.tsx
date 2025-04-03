@@ -143,7 +143,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             if (jobPositionsError) {
               console.error('Error fetching job positions:', jobPositionsError);
             } else if (jobPositionsData) {
-              jobPositions = jobPositionsData;
+              jobPositions = jobPositionsData.map((item: { job_position: string }) => item.job_position);
+              console.log('Job positions fetched:', jobPositions);
             }
           } catch (e) {
             console.error('Exception fetching job positions:', e);
@@ -311,14 +312,25 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (data.jobPositions !== undefined) {
         try {
-          await supabase.rpc('delete_company_job_positions', { company_id_param: id });
+          console.log('Updating job positions for company:', id);
+          console.log('New job positions:', data.jobPositions);
+          
+          await supabase.rpc('delete_company_job_positions', { 
+            company_id_param: id 
+          });
           
           if (data.jobPositions.length > 0) {
             for (const position of data.jobPositions) {
-              await supabase.rpc('add_company_job_position', { 
+              const { data: result, error: addError } = await supabase.rpc('add_company_job_position', { 
                 company_id_param: id,
                 job_position_param: position
               });
+              
+              if (addError) {
+                console.error('Error adding job position:', addError);
+                throw addError;
+              }
+              console.log('Added job position:', position, 'Result:', result);
             }
           }
         } catch (error: any) {
@@ -866,7 +878,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         companies,
         activeCompany,
-        messages: messagesData,
+        messages: messagesData || [],
         addMessage,
         deleteMessage,
         updateMessage,
