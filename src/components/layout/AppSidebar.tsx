@@ -1,3 +1,4 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
@@ -31,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -78,6 +80,8 @@ import { toast } from "sonner";
 import { CompanyList } from "./sidebar/CompanyList";
 import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
 import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
+import { PhonesTab } from "./sidebar/CompanyEditor/PhonesTab";
+import { ContactsTab } from "./sidebar/CompanyEditor/ContactsTab";
 import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
 interface FilterOptions {
@@ -434,11 +438,6 @@ export function AppSidebar() {
 
   const handleDeleteCompanyContact = async (contactId: string) => {
     await deleteCompanyContact(contactId);
-  };
-
-  const filterByInProgress = () => {
-    setInProgressFilter(true);
-    setFilterType('inProgress');
   };
 
   const handleAddGlobalInProgressState = async (state: string) => {
@@ -950,4 +949,28 @@ export function AppSidebar() {
               </TabsContent>
               
               <TabsContent value="phones" className="pt-4">
-                <div className="space-
+                <PhonesTab
+                  company={editingCompany}
+                  newPhone={newPhone}
+                  setNewPhone={setNewPhone}
+                  onAddPhone={handleAddPhone}
+                  onDeletePhone={handleDeleteCompanyPhone}
+                />
+              </TabsContent>
+              
+              <TabsContent value="contacts" className="pt-4">
+                <ContactsTab
+                  company={editingCompany}
+                  newContact={newContact}
+                  setNewContact={setNewContact}
+                  onAddContact={handleAddContact}
+                  onDeleteContact={handleDeleteCompanyContact}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Sidebar>
+  );
+}
