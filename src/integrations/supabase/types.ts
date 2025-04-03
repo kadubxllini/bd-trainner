@@ -141,6 +141,35 @@ export type Database = {
           },
         ]
       }
+      company_job_positions: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          job_position: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          job_position: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_position?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_job_positions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_phones: {
         Row: {
           company_id: string
