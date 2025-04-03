@@ -24,10 +24,12 @@ import {
   AlertCircle,
   Clock,
   BriefcaseBusiness,
+  Check,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -78,6 +80,13 @@ import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
 import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
 import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
+interface FilterOptions {
+  jobPositions: string[];
+  urgency: UrgencyLevel | null;
+  inProgressState: string | null;
+  hasInProgress: boolean;
+}
+
 export function AppSidebar() {
   const { 
     companies, 
@@ -111,10 +120,12 @@ export function AppSidebar() {
   const [newPhone, setNewPhone] = useState('');
   const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'job' | 'urgency' | 'inProgress'>('all');
-  const [jobPositionFilter, setJobPositionFilter] = useState<string | null>(null);
-  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyLevel | null>(null);
-  const [inProgressFilter, setInProgressFilter] = useState<boolean>(false);
+  const [filterOptions, setFilterOptions] = useState<FilterOptions>({
+    jobPositions: [],
+    urgency: null,
+    inProgressState: null,
+    hasInProgress: false
+  });
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -135,67 +146,130 @@ export function AppSidebar() {
     }
   });
 
+  // Effect to filter companies whenever filter criteria or search query changes
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      let filtered = [...companies];
-      
-      if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
-        filtered = filtered.filter(company => 
-          company.jobPositions.includes(jobPositionFilter)
-        );
-      } else if (filterType === 'urgency' && filtered.length > 0) {
-        if (urgencyFilter) {
-          filtered = filtered.filter(company => company.urgency === urgencyFilter);
-        } else {
-          filtered = filtered.filter(company => company.urgency);
-        }
-      } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => 
-          (company.inProgressStates && company.inProgressStates.length > 0)
-        );
-      }
-      
-      setFilteredCompanies(filtered);
-    } else {
-      let filtered = companies.filter(company => {
+    let filtered = [...companies];
+    
+    // Apply search filter if query exists
+    if (searchQuery.trim() !== '') {
+      filtered = filtered.filter(company => {
+        // Search in company name
         if (company.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           return true;
         }
         
+        // Search in emails
         if (company.emails.some(e => e.email.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
+        // Search in phones
         if (company.phones.some(p => p.phone.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
+        // Search in contacts
         if (company.contacts.some(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
         return false;
       });
-      
-      if (filterType === 'job' && jobPositionFilter && filtered.length > 0) {
-        filtered = filtered.filter(company => 
-          company.jobPositions.includes(jobPositionFilter)
-        );
-      } else if (filterType === 'urgency' && filtered.length > 0) {
-        if (urgencyFilter) {
-          filtered = filtered.filter(company => company.urgency === urgencyFilter);
-        } else {
-          filtered = filtered.filter(company => company.urgency);
-        }
-      } else if (filterType === 'inProgress' && filtered.length > 0) {
-        filtered = filtered.filter(company => 
-          (company.inProgressStates && company.inProgressStates.length > 0)
-        );
-      }
-      
-      setFilteredCompanies(filtered);
     }
-  }, [searchQuery, companies, filterType, urgencyFilter, jobPositionFilter, inProgressFilter]);
+    
+    // Apply job positions filter if any selected
+    if (filterOptions.jobPositions.length > 0) {
+      filtered = filtered.filter(company => 
+        company.jobPositions.some(position => 
+          filterOptions.jobPositions.includes(position)
+        )
+      );
+    }
+    
+    // Apply urgency filter if selected
+    if (filterOptions.urgency) {
+      filtered = filtered.filter(company => 
+        company.urgency === filterOptions.urgency
+      );
+    }
+    
+    // Apply in-progress state filter
+    if (filterOptions.hasInProgress) {
+      filtered = filtered.filter(company => 
+        (company.inProgressStates && company.inProgressStates.length > 0)
+      );
+    }
+    
+    // Apply specific in-progress state filter
+    if (filterOptions.inProgressState) {
+      filtered = filtered.filter(company => 
+        company.inProgress === filterOptions.inProgressState
+      );
+    }
+    
+    setFilteredCompanies(filtered);
+  }, [searchQuery, companies, filterOptions]);
+
+  // Helper function to check if filters are active
+  const isFilterActive = () => {
+    return (
+      filterOptions.jobPositions.length > 0 || 
+      filterOptions.urgency !== null ||
+      filterOptions.hasInProgress ||
+      filterOptions.inProgressState !== null
+    );
+  };
+
+  // Helper function to clear all filters
+  const clearAllFilters = () => {
+    setFilterOptions({
+      jobPositions: [],
+      urgency: null,
+      inProgressState: null,
+      hasInProgress: false
+    });
+  };
+
+  // Toggle job position in filter
+  const toggleJobPositionFilter = (position: string) => {
+    setFilterOptions(prev => {
+      if (prev.jobPositions.includes(position)) {
+        return {
+          ...prev,
+          jobPositions: prev.jobPositions.filter(p => p !== position)
+        };
+      } else {
+        return {
+          ...prev,
+          jobPositions: [...prev.jobPositions, position]
+        };
+      }
+    });
+  };
+
+  // Toggle urgency filter
+  const toggleUrgencyFilter = (urgency: UrgencyLevel) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      urgency: prev.urgency === urgency ? null : urgency
+    }));
+  };
+
+  // Set specific in-progress state
+  const setInProgressStateFilter = (state: string | null) => {
+    setFilterOptions(prev => ({
+      ...prev,
+      inProgressState: state
+    }));
+  };
+
+  // Toggle hasInProgress filter
+  const toggleHasInProgressFilter = () => {
+    setFilterOptions(prev => ({
+      ...prev,
+      hasInProgress: !prev.hasInProgress
+    }));
+  };
 
   const handleCreateCompany = () => {
     if (newCompanyName.trim()) {
@@ -218,6 +292,7 @@ export function AppSidebar() {
   const saveEditedCompany = () => {
     if (editingCompany) {
       const formData = form.getValues();
+      console.log("Saving company with job positions:", formData.jobPositions);
       
       if (formData.name.trim()) {
         updateCompany(editingCompany.id, { 
@@ -285,16 +360,6 @@ export function AppSidebar() {
 
   const toggleFilterMenu = () => {
     setShowFilterMenu(!showFilterMenu);
-  };
-
-  const filterByUrgency = (urgency: UrgencyLevel | null) => {
-    setUrgencyFilter(urgency);
-    setFilterType('urgency');
-  };
-
-  const filterByJobPosition = (jobPosition: string | null) => {
-    setJobPositionFilter(jobPosition);
-    setFilterType('job');
   };
 
   const handleJobPositionChange = (value: string) => {
@@ -426,7 +491,7 @@ export function AppSidebar() {
               <div className="flex gap-1">
                 <Button variant="ghost" size="sm" onClick={toggleFilterMenu} className="h-6 px-2 relative">
                   <Filter className="h-4 w-4" />
-                  {filterType !== 'all' && (
+                  {isFilterActive() && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
                   )}
                 </Button>
@@ -460,143 +525,222 @@ export function AppSidebar() {
             {showFilterMenu && (
               <div className="px-4 pb-2">
                 <div className="space-y-2 p-2 bg-muted/50 rounded-md">
-                  <div className="text-xs font-medium">Filtrar por:</div>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex justify-between items-center">
+                    <div className="text-xs font-medium">Filtros aplicados:</div>
                     <Button 
+                      variant="ghost" 
                       size="sm" 
-                      variant={filterType === 'all' ? "default" : "outline"} 
-                      className="text-xs h-7" 
-                      onClick={() => {
-                        setFilterType('all');
-                        setUrgencyFilter(null);
-                        setJobPositionFilter(null);
-                        setInProgressFilter(false);
-                      }}
+                      onClick={clearAllFilters} 
+                      className="text-xs h-6"
+                      disabled={!isFilterActive()}
                     >
-                      Todos
+                      Limpar
                     </Button>
-                    
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant={filterType === 'job' ? "default" : "outline"} 
-                          className="text-xs h-7 flex items-center gap-1" 
-                        >
-                          <BriefcaseBusiness className="h-3 w-3" />
-                          Vaga
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2 bg-background" align="start">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Selecione uma vaga:</p>
-                          <div className="flex flex-col space-y-1">
-                            <ScrollArea className="h-[200px] pr-3">
-                              {availableJobPositions.map(job => (
-                                <Button 
-                                  key={job}
-                                  size="sm" 
-                                  variant={(filterType === 'job' && jobPositionFilter === job) ? "default" : "outline"} 
-                                  className="text-xs h-7 justify-start w-full mb-1"
-                                  onClick={() => filterByJobPosition(job)}
-                                >
-                                  {job}
-                                </Button>
-                              ))}
-                            </ScrollArea>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant={filterType === 'urgency' ? "default" : "outline"} 
-                          className="text-xs h-7 flex items-center gap-1" 
-                        >
-                          <AlertCircle className="h-3 w-3" />
-                          Urgência
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2 bg-background" align="start">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Selecione o nível de urgência:</p>
-                          <div className="flex flex-col space-y-1">
-                            <Button 
-                              size="sm" 
-                              variant={(filterType === 'urgency' && urgencyFilter === 'Baixa') ? "default" : "outline"} 
-                              className="text-xs h-7 flex items-center gap-1 justify-start" 
-                              onClick={() => filterByUrgency('Baixa')}
-                            >
-                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                              Baixa
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant={(filterType === 'urgency' && urgencyFilter === 'Média') ? "default" : "outline"} 
-                              className="text-xs h-7 flex items-center gap-1 justify-start" 
-                              onClick={() => filterByUrgency('Média')}
-                            >
-                              <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                              Média
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant={(filterType === 'urgency' && urgencyFilter === 'Alta') ? "default" : "outline"} 
-                              className="text-xs h-7 flex items-center gap-1 justify-start" 
-                              onClick={() => filterByUrgency('Alta')}
-                            >
-                              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                              Alta
-                            </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant={filterType === 'inProgress' ? "default" : "outline"} 
-                          className="text-xs h-7 flex items-center gap-1" 
-                        >
-                          <Clock className="h-3 w-3" />
-                          Decorrer
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2 bg-background z-50" align="start">
-                        <div className="space-y-2">
-                          <p className="text-xs font-medium">Selecione um estado:</p>
-                          <div className="flex flex-col space-y-1">
-                            <ScrollArea className="h-[200px] pr-3">
-                              {availableInProgressStates.map(state => (
-                                <Button 
-                                  key={state}
-                                  size="sm" 
-                                  variant={(filterType === 'inProgress') ? "default" : "outline"}
-                                  className="text-xs h-7 justify-start w-full mb-1"
-                                  onClick={filterByInProgress}
-                                >
-                                  {state}
-                                </Button>
-                              ))}
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className="text-xs h-7 justify-start w-full mb-1"
-                                onClick={filterByInProgress}
-                              >
-                                Qualquer estado
-                              </Button>
-                            </ScrollArea>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
                   </div>
+
+                  {/* Active filters display */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {filterOptions.jobPositions.map(job => (
+                      <Badge 
+                        key={`job-${job}`} 
+                        variant="secondary" 
+                        className="flex items-center gap-1 bg-primary/20 text-xs"
+                        onClick={() => toggleJobPositionFilter(job)}
+                      >
+                        <BriefcaseBusiness className="h-3 w-3" />
+                        {job}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    ))}
+                    
+                    {filterOptions.urgency && (
+                      <Badge 
+                        variant="secondary" 
+                        className={`flex items-center gap-1 text-xs ${getUrgencyColor(filterOptions.urgency)}`}
+                        onClick={() => toggleUrgencyFilter(filterOptions.urgency!)}
+                      >
+                        <AlertCircle className="h-3 w-3" />
+                        {filterOptions.urgency}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    )}
+                    
+                    {filterOptions.hasInProgress && (
+                      <Badge 
+                        variant="secondary" 
+                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
+                        onClick={toggleHasInProgressFilter}
+                      >
+                        <Clock className="h-3 w-3" />
+                        Com estado
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    )}
+                    
+                    {filterOptions.inProgressState && (
+                      <Badge 
+                        variant="secondary" 
+                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
+                        onClick={() => setInProgressStateFilter(null)}
+                      >
+                        <Clock className="h-3 w-3" />
+                        {filterOptions.inProgressState}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs font-medium mt-2">Adicionar filtros:</div>
+                  
+                  {/* Job positions filter */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
+                      >
+                        <BriefcaseBusiness className="h-3 w-3" />
+                        Vagas
+                        {filterOptions.jobPositions.length > 0 && (
+                          <Badge variant="secondary" className="ml-auto">
+                            {filterOptions.jobPositions.length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Selecione as vagas:</p>
+                        <ScrollArea className="h-[200px] pr-3">
+                          <div className="space-y-2">
+                            {availableJobPositions.map(job => (
+                              <div key={job} className="flex items-center space-x-2">
+                                <Checkbox 
+                                  id={`job-${job}`}
+                                  checked={filterOptions.jobPositions.includes(job)}
+                                  onCheckedChange={() => toggleJobPositionFilter(job)}
+                                />
+                                <label htmlFor={`job-${job}`} className="text-sm cursor-pointer">{job}</label>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* Urgency filter */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
+                      >
+                        <AlertCircle className="h-3 w-3" />
+                        Urgência
+                        {filterOptions.urgency && (
+                          <Badge variant="secondary" className={`ml-auto ${getUrgencyColor(filterOptions.urgency)}`}>
+                            {filterOptions.urgency}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Selecione a urgência:</p>
+                        <div className="flex flex-col space-y-1">
+                          <Button 
+                            size="sm" 
+                            variant={filterOptions.urgency === 'Baixa' ? "default" : "outline"} 
+                            className="text-xs h-7 flex items-center gap-1 justify-start" 
+                            onClick={() => toggleUrgencyFilter('Baixa')}
+                          >
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            Baixa
+                            {filterOptions.urgency === 'Baixa' && <Check className="ml-auto h-3 w-3" />}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant={filterOptions.urgency === 'Média' ? "default" : "outline"} 
+                            className="text-xs h-7 flex items-center gap-1 justify-start" 
+                            onClick={() => toggleUrgencyFilter('Média')}
+                          >
+                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                            Média
+                            {filterOptions.urgency === 'Média' && <Check className="ml-auto h-3 w-3" />}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant={filterOptions.urgency === 'Alta' ? "default" : "outline"} 
+                            className="text-xs h-7 flex items-center gap-1 justify-start" 
+                            onClick={() => toggleUrgencyFilter('Alta')}
+                          >
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            Alta
+                            {filterOptions.urgency === 'Alta' && <Check className="ml-auto h-3 w-3" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  
+                  {/* In-progress states filter */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
+                      >
+                        <Clock className="h-3 w-3" />
+                        Decorrer
+                        {(filterOptions.hasInProgress || filterOptions.inProgressState) && (
+                          <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-800">
+                            {filterOptions.inProgressState || "Ativo"}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox 
+                            id="has-in-progress"
+                            checked={filterOptions.hasInProgress}
+                            onCheckedChange={toggleHasInProgressFilter}
+                          />
+                          <label htmlFor="has-in-progress" className="text-sm cursor-pointer">
+                            Qualquer estado
+                          </label>
+                        </div>
+                        
+                        <p className="text-xs font-medium mt-2">Ou selecione um estado específico:</p>
+                        <ScrollArea className="h-[200px] pr-3">
+                          <div className="space-y-1">
+                            {availableInProgressStates.map(state => (
+                              <Button 
+                                key={state}
+                                size="sm" 
+                                variant={filterOptions.inProgressState === state ? "default" : "outline"} 
+                                className="text-xs h-7 flex items-center gap-1 justify-start w-full" 
+                                onClick={() => setInProgressStateFilter(
+                                  filterOptions.inProgressState === state ? null : state
+                                )}
+                              >
+                                <Clock className="h-3 w-3" />
+                                {state}
+                                {filterOptions.inProgressState === state && (
+                                  <Check className="ml-auto h-3 w-3" />
+                                )}
+                              </Button>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             )}
@@ -806,104 +950,4 @@ export function AppSidebar() {
               </TabsContent>
               
               <TabsContent value="phones" className="pt-4">
-                <div className="space-y-4">
-                  {editingCompany.phones.length > 0 ? (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Telefones cadastrados</h3>
-                      <div className="space-y-2">
-                        {editingCompany.phones.map((phone) => (
-                          <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-muted-foreground" />
-                              <span>{phone.phone}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteCompanyPhone(phone.id)} 
-                              className="h-7 w-7 hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      Nenhum telefone cadastrado
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-medium mb-2">Adicionar novo telefone</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newPhone}
-                        onChange={(e) => setNewPhone(e.target.value)}
-                        placeholder="Telefone"
-                        className="w-full"
-                      />
-                      
-                      <Button className="w-full" onClick={handleAddPhone}>
-                        Adicionar telefone
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="contacts" className="pt-4">
-                <div className="space-y-4">
-                  {editingCompany.contacts.length > 0 ? (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Contatos cadastrados</h3>
-                      <div className="space-y-2">
-                        {editingCompany.contacts.map((contact) => (
-                          <div key={contact.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-muted-foreground" />
-                              <span>{contact.name}</span>
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDeleteCompanyContact(contact.id)} 
-                              className="h-7 w-7 hover:text-destructive"
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-center text-muted-foreground py-4">
-                      Nenhum contato cadastrado
-                    </div>
-                  )}
-                  
-                  <div className="border-t pt-4">
-                    <h3 className="text-sm font-medium mb-2">Adicionar novo contato</h3>
-                    <div className="space-y-2">
-                      <Input
-                        value={newContact}
-                        onChange={(e) => setNewContact(e.target.value)}
-                        placeholder="Nome do contato"
-                        className="w-full"
-                      />
-                      
-                      <Button className="w-full" onClick={handleAddContact}>
-                        Adicionar contato
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
-    </Sidebar>
-  );
-}
+                <div className="space-

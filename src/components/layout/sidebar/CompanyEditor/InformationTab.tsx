@@ -59,6 +59,7 @@ export function InformationTab({
     // Initialize current positions from form
     const positions = form.getValues().jobPositions || [];
     setCurrentJobPositions(positions);
+    console.log("Initializing job positions:", positions);
   }, [form]);
   
   const handleAddJobPosition = () => {
@@ -75,6 +76,7 @@ export function InformationTab({
     const updatedPositions = [...currentJobPositions, selectedJobPosition];
     setCurrentJobPositions(updatedPositions);
     form.setValue('jobPositions', updatedPositions);
+    console.log("Updated job positions after add:", updatedPositions);
     setSelectedJobPosition("none");
   };
   
@@ -82,6 +84,7 @@ export function InformationTab({
     const updatedPositions = currentJobPositions.filter(p => p !== position);
     setCurrentJobPositions(updatedPositions);
     form.setValue('jobPositions', updatedPositions);
+    console.log("Updated job positions after remove:", updatedPositions);
   };
   
   const handleCustomJobPosition = () => {
@@ -99,6 +102,7 @@ export function InformationTab({
     const updatedPositions = [...currentJobPositions, customJobPosition];
     setCurrentJobPositions(updatedPositions);
     form.setValue('jobPositions', updatedPositions);
+    console.log("Updated job positions after custom add:", updatedPositions);
     setCustomJobPosition('');
   };
   
@@ -110,6 +114,7 @@ export function InformationTab({
       return;
     }
     
+    console.log("Saving job positions:", currentJobPositions);
     onSave();
   };
   

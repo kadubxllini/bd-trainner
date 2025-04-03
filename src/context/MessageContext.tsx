@@ -134,13 +134,26 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const companiesWithDetails = await Promise.all(
         companiesData.map(async (company) => {
-          const { data: companyDetailsData, error: companyDetailsError } = await supabase
+          const { data: jobPositionsData, error: jobPositionsError } = await supabase
+            .from('company_job_positions')
+            .select('job_position')
+            .eq('company_id', company.id);
+          
+          if (jobPositionsError) {
+            console.error('Error fetching job positions:', jobPositionsError);
+          }
+          
+          const jobPositions = jobPositionsData?.map(item => item.job_position) || [];
+          if (company.job_position && !jobPositions.includes(company.job_position)) {
+            jobPositions.push(company.job_position);
+          }
+          
+          const { data: companyDetailsData } = await supabase
             .from('companies')
-            .select('job_position, urgency, in_progress')
+            .select('urgency, in_progress')
             .eq('id', company.id)
             .single();
             
-          const jobPosition = companyDetailsData?.job_position || null;
           const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
           const inProgress = companyDetailsData?.in_progress || undefined;
           
@@ -183,7 +196,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           return {
             id: company.id,
             name: company.name,
-            jobPositions: jobPosition ? [jobPosition] : [],
+            jobPositions: jobPositions,
             urgency: urgency as UrgencyLevel,
             inProgress: inProgress,
             emails: emailsData?.map(email => ({
@@ -275,9 +288,6 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updateData: any = {};
       
       if (data.name) updateData.name = data.name;
-      if (data.jobPositions !== undefined) {
-        updateData.job_position = data.jobPositions.length > 0 ? data.jobPositions[0] : null;
-      }
       if (data.urgency !== undefined) updateData.urgency = data.urgency;
       if (data.inProgress !== undefined) updateData.in_progress = data.inProgress;
       
@@ -287,6 +297,28 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .eq('id', id);
       
       if (error) throw error;
+      
+      if (data.jobPositions !== undefined) {
+        const { error: deleteError } = await supabase
+          .from('company_job_positions')
+          .delete()
+          .eq('company_id', id);
+        
+        if (deleteError) throw deleteError;
+        
+        if (data.jobPositions.length > 0) {
+          const jobPositionsToInsert = data.jobPositions.map(position => ({
+            company_id: id,
+            job_position: position
+          }));
+          
+          const { error: insertError } = await supabase
+            .from('company_job_positions')
+            .insert(jobPositionsToInsert);
+          
+          if (insertError) throw insertError;
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
