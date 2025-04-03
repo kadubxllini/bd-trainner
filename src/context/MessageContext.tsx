@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from '@/types';
 import { toast } from 'sonner';
@@ -135,20 +134,29 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       const companiesWithDetails = await Promise.all(
         companiesData.map(async (company) => {
-          // Fetch job positions from the company_job_positions table
-          const { data: jobPositionsData, error: jobPositionsError } = await supabase
-            .from('company_job_positions')
-            .select('job_position')
-            .eq('company_id', company.id);
+          let jobPositions: string[] = [];
           
-          if (jobPositionsError) {
-            console.error('Error fetching job positions:', jobPositionsError);
-          }
-          
-          // Combine job positions from the new table and legacy field
-          const jobPositions = jobPositionsData?.map(item => item.job_position) || [];
-          if (company.job_position && !jobPositions.includes(company.job_position)) {
-            jobPositions.push(company.job_position);
+          try {
+            const { data: jobPositionsData, error: jobPositionsError } = await supabase
+              .rpc('get_company_job_positions', { company_id_param: company.id });
+            
+            if (jobPositionsError) {
+              console.error('Error fetching job positions:', jobPositionsError);
+            } else if (jobPositionsData) {
+              jobPositions = jobPositionsData;
+            }
+          } catch (e) {
+            console.error('Exception fetching job positions:', e);
+            
+            const { data: fallbackData } = await supabase
+              .from('companies')
+              .select('job_position')
+              .eq('id', company.id)
+              .single();
+              
+            if (fallbackData?.job_position && !jobPositions.includes(fallbackData.job_position)) {
+              jobPositions.push(fallbackData.job_position);
+            }
           }
           
           const { data: companyDetailsData } = await supabase
@@ -301,37 +309,21 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
       
       if (error) throw error;
       
-      // Handle job positions separately using the new company_job_positions table
       if (data.jobPositions !== undefined) {
-        // Delete existing job positions
-        const { error: deletePositionsError } = await supabase
-          .from('company_job_positions')
-          .delete()
-          .eq('company_id', id);
-        
-        if (deletePositionsError) {
-          console.error('Error deleting job positions:', deletePositionsError);
-          throw deletePositionsError;
-        }
-        
-        // Add new job positions if any
-        if (data.jobPositions.length > 0) {
-          const positionsToInsert = data.jobPositions.map(position => ({
-            company_id: id,
-            job_position: position
-          }));
+        try {
+          await supabase.rpc('delete_company_job_positions', { company_id_param: id });
           
-          // Insert each position separately to avoid type issues
-          for (const position of positionsToInsert) {
-            const { error: insertError } = await supabase
-              .from('company_job_positions')
-              .insert(position);
-            
-            if (insertError) {
-              console.error('Error inserting job position:', insertError);
-              throw insertError;
+          if (data.jobPositions.length > 0) {
+            for (const position of data.jobPositions) {
+              await supabase.rpc('add_company_job_position', { 
+                company_id_param: id,
+                job_position_param: position
+              });
             }
           }
+        } catch (error: any) {
+          console.error('Error updating job positions:', error);
+          throw error;
         }
       }
     },
