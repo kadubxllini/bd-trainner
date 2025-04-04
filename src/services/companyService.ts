@@ -19,9 +19,9 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
   try {
     console.log('Fetching job positions for company:', companyId);
     
-    // Type the RPC function call properly with both type parameters
+    // Fix the RPC type parameters and response handling
     const { data: jobPositionsData, error: jobPositionsError } = await supabase
-      .rpc<JobPositionResponse[], { company_id_param: string }>('get_company_job_positions', {
+      .rpc('get_company_job_positions', {
         company_id_param: companyId
       });
     
@@ -31,9 +31,8 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
     } 
     
     if (jobPositionsData) {
-      // Cast the result to the expected type
-      const typedJobPositions = jobPositionsData;
-      const jobPositions = typedJobPositions.map(item => item.job_position);
+      // Properly cast the response to expected type
+      const jobPositions = (jobPositionsData as Array<{job_position: string}>).map(item => item.job_position);
       console.log('Job positions fetched:', jobPositions);
       return jobPositions;
     }
@@ -136,9 +135,9 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     console.log('Updating job positions for company:', id);
     console.log('New job positions:', jobPositions);
     
-    // Type the RPC functions properly with both type parameters
+    // Fix the RPC type parameters for delete operation
     const { error: deleteError } = await supabase
-      .rpc<void, { company_id_param: string }>('delete_company_job_positions', {
+      .rpc('delete_company_job_positions', {
         company_id_param: id
       });
       
@@ -149,8 +148,9 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     
     if (jobPositions.length > 0) {
       for (const position of jobPositions) {
+        // Fix the RPC type parameters for add operation
         const { data: result, error: addError } = await supabase
-          .rpc<string, { company_id_param: string, job_position_param: string }>('add_company_job_position', { 
+          .rpc('add_company_job_position', { 
             company_id_param: id,
             job_position_param: position
           });
