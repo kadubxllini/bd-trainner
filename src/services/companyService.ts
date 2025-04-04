@@ -19,9 +19,9 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
   try {
     console.log('Fetching job positions for company:', companyId);
     
-    // Type the RPC function call properly with generic parameters and object format
+    // Type the RPC function call properly with both type parameters
     const { data: jobPositionsData, error: jobPositionsError } = await supabase
-      .rpc<JobPositionResponse[]>('get_company_job_positions', {
+      .rpc<JobPositionResponse[], { company_id_param: string }>('get_company_job_positions', {
         company_id_param: companyId
       });
     
@@ -136,9 +136,9 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     console.log('Updating job positions for company:', id);
     console.log('New job positions:', jobPositions);
     
-    // Type the RPC functions properly with explicit generic parameters
+    // Type the RPC functions properly with both type parameters
     const { error: deleteError } = await supabase
-      .rpc<void>('delete_company_job_positions', {
+      .rpc<void, { company_id_param: string }>('delete_company_job_positions', {
         company_id_param: id
       });
       
@@ -150,7 +150,7 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     if (jobPositions.length > 0) {
       for (const position of jobPositions) {
         const { data: result, error: addError } = await supabase
-          .rpc<string>('add_company_job_position', { 
+          .rpc<string, { company_id_param: string, job_position_param: string }>('add_company_job_position', { 
             company_id_param: id,
             job_position_param: position
           });
