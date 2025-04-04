@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Message, Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState, JobPositionResponse, CompanyJobPositionsResult } from '@/types';
 import { toast } from 'sonner';
@@ -140,12 +141,14 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
             console.log('Fetching job positions for company:', company.id);
             
             const { data: jobPositionsData, error: jobPositionsError } = await supabase
-              .rpc<JobPositionResponse, { company_id_param: string }>('get_company_job_positions', { company_id_param: company.id });
+              .rpc('get_company_job_positions', { company_id_param: company.id });
             
             if (jobPositionsError) {
               console.error('Error fetching job positions:', jobPositionsError);
             } else if (jobPositionsData) {
-              jobPositions = jobPositionsData.map(item => item.job_position);
+              // Cast the result to the expected type
+              const typedJobPositions = jobPositionsData as JobPositionResponse[];
+              jobPositions = typedJobPositions.map(item => item.job_position);
               console.log('Job positions fetched:', jobPositions);
             }
           } catch (e) {
@@ -318,7 +321,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           console.log('New job positions:', data.jobPositions);
           
           const { error: deleteError } = await supabase
-            .rpc<CompanyJobPositionsResult, { company_id_param: string }>('delete_company_job_positions', { 
+            .rpc('delete_company_job_positions', { 
               company_id_param: id 
             });
             
@@ -330,7 +333,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (data.jobPositions.length > 0) {
             for (const position of data.jobPositions) {
               const { data: result, error: addError } = await supabase
-                .rpc<CompanyJobPositionsResult, { company_id_param: string, job_position_param: string }>('add_company_job_position', { 
+                .rpc('add_company_job_position', { 
                   company_id_param: id,
                   job_position_param: position
                 });
