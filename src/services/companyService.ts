@@ -19,9 +19,11 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
   try {
     console.log('Fetching job positions for company:', companyId);
     
-    // Fix: Use object param format for RPC call to avoid type error
+    // Type the RPC function call properly with explicit generic parameters
     const { data: jobPositionsData, error: jobPositionsError } = await supabase
-      .rpc('get_company_job_positions', { company_id_param: companyId });
+      .rpc<JobPositionResponse[]>('get_company_job_positions', {
+        company_id_param: companyId
+      });
     
     if (jobPositionsError) {
       console.error('Error fetching job positions:', jobPositionsError);
@@ -30,7 +32,7 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
     
     if (jobPositionsData) {
       // Cast the result to the expected type
-      const typedJobPositions = jobPositionsData as JobPositionResponse[];
+      const typedJobPositions = jobPositionsData;
       const jobPositions = typedJobPositions.map(item => item.job_position);
       console.log('Job positions fetched:', jobPositions);
       return jobPositions;
@@ -134,9 +136,11 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     console.log('Updating job positions for company:', id);
     console.log('New job positions:', jobPositions);
     
-    // Fix: Use object param format for RPC call to avoid type error
+    // Type the RPC functions properly with explicit generic parameters
     const { error: deleteError } = await supabase
-      .rpc('delete_company_job_positions', { company_id_param: id });
+      .rpc<void>('delete_company_job_positions', {
+        company_id_param: id
+      });
       
     if (deleteError) {
       console.error('Error deleting job positions:', deleteError);
@@ -145,9 +149,8 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     
     if (jobPositions.length > 0) {
       for (const position of jobPositions) {
-        // Fix: Use object param format for RPC call to avoid type error
         const { data: result, error: addError } = await supabase
-          .rpc('add_company_job_position', { 
+          .rpc<string>('add_company_job_position', { 
             company_id_param: id,
             job_position_param: position
           });
