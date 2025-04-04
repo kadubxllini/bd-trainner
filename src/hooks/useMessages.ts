@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Message } from '@/types';
 import * as messageService from '@/services/messageService';
 
-export const useMessages = (companyId?: string) => {
+export const useMessagesData = (companyId?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 

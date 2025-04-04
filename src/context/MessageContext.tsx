@@ -4,9 +4,12 @@ import { Company, Message } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useCompanies } from '@/hooks/useCompanies';
-import { useMessages } from '@/hooks/useMessages';
+import { useMessagesData } from '@/hooks/useMessages'; // Renamed import to avoid conflict
 import { useJobPositions } from '@/hooks/useJobPositions';
 import { useInProgressStates } from '@/hooks/useInProgressStates';
+
+// Import UrgencyLevel type
+import { UrgencyLevel } from '@/types';
 
 interface MessageContextProps {
   companies: Company[];
@@ -36,9 +39,6 @@ interface MessageContextProps {
   isLoading: boolean;
 }
 
-// Import missing UrgencyLevel type
-import { UrgencyLevel } from '@/types';
-
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
 
 export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -67,7 +67,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updateMessage,
     deleteMessage,
     isLoadingMessages
-  } = useMessages(activeCompany?.id);
+  } = useMessagesData(activeCompany?.id); // Use the renamed import
   
   const {
     jobPositions: availableJobPositions,
