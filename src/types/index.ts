@@ -46,3 +46,8 @@ export interface InProgressState {
   id: string;
   description: string;
 }
+
+// New interface to define the response from the RPC function
+export interface JobPositionRpcResponse {
+  job_position: string;
+}

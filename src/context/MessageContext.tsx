@@ -43,6 +43,14 @@ export const useMessages = () => {
   return context;
 };
 
+interface JobPositionResponse {
+  job_position: string;
+}
+
+interface CompanyJobPositionsResult {
+  success: boolean;
+}
+
 export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -137,13 +145,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           let jobPositions: string[] = [];
           
           try {
+            console.log('Fetching job positions for company:', company.id);
+            
             const { data: jobPositionsData, error: jobPositionsError } = await supabase
-              .rpc('get_company_job_positions', { company_id_param: company.id });
+              .rpc<JobPositionResponse[]>('get_company_job_positions', { company_id_param: company.id });
             
             if (jobPositionsError) {
               console.error('Error fetching job positions:', jobPositionsError);
             } else if (jobPositionsData) {
-              jobPositions = jobPositionsData.map((item: { job_position: string }) => item.job_position);
+              jobPositions = jobPositionsData.map(item => item.job_position);
               console.log('Job positions fetched:', jobPositions);
             }
           } catch (e) {
@@ -315,16 +325,23 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
           console.log('Updating job positions for company:', id);
           console.log('New job positions:', data.jobPositions);
           
-          await supabase.rpc('delete_company_job_positions', { 
-            company_id_param: id 
-          });
+          const { error: deleteError } = await supabase
+            .rpc<CompanyJobPositionsResult>('delete_company_job_positions', { 
+              company_id_param: id 
+            });
+            
+          if (deleteError) {
+            console.error('Error deleting job positions:', deleteError);
+            throw deleteError;
+          }
           
           if (data.jobPositions.length > 0) {
             for (const position of data.jobPositions) {
-              const { data: result, error: addError } = await supabase.rpc('add_company_job_position', { 
-                company_id_param: id,
-                job_position_param: position
-              });
+              const { data: result, error: addError } = await supabase
+                .rpc<CompanyJobPositionsResult>('add_company_job_position', { 
+                  company_id_param: id,
+                  job_position_param: position
+                });
               
               if (addError) {
                 console.error('Error adding job position:', addError);
