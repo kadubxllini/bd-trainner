@@ -19,7 +19,7 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
   try {
     console.log('Fetching job positions for company:', companyId);
     
-    // Type the RPC function call properly with explicit generic parameters
+    // Type the RPC function call properly with generic parameters and object format
     const { data: jobPositionsData, error: jobPositionsError } = await supabase
       .rpc<JobPositionResponse[]>('get_company_job_positions', {
         company_id_param: companyId
