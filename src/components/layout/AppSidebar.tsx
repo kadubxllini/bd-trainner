@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -150,29 +149,23 @@ export function AppSidebar() {
     }
   });
 
-  // Effect to filter companies whenever filter criteria or search query changes
   useEffect(() => {
     let filtered = [...companies];
     
-    // Apply search filter if query exists
     if (searchQuery.trim() !== '') {
       filtered = filtered.filter(company => {
-        // Search in company name
         if (company.name.toLowerCase().includes(searchQuery.toLowerCase())) {
           return true;
         }
         
-        // Search in emails
         if (company.emails.some(e => e.email.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
-        // Search in phones
         if (company.phones.some(p => p.phone.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
         
-        // Search in contacts
         if (company.contacts.some(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))) {
           return true;
         }
@@ -181,7 +174,6 @@ export function AppSidebar() {
       });
     }
     
-    // Apply job positions filter if any selected
     if (filterOptions.jobPositions.length > 0) {
       filtered = filtered.filter(company => 
         company.jobPositions.some(position => 
@@ -190,21 +182,18 @@ export function AppSidebar() {
       );
     }
     
-    // Apply urgency filter if selected
     if (filterOptions.urgency) {
       filtered = filtered.filter(company => 
         company.urgency === filterOptions.urgency
       );
     }
     
-    // Apply in-progress state filter
     if (filterOptions.hasInProgress) {
       filtered = filtered.filter(company => 
         (company.inProgressStates && company.inProgressStates.length > 0)
       );
     }
     
-    // Apply specific in-progress state filter
     if (filterOptions.inProgressState) {
       filtered = filtered.filter(company => 
         company.inProgress === filterOptions.inProgressState
@@ -214,7 +203,6 @@ export function AppSidebar() {
     setFilteredCompanies(filtered);
   }, [searchQuery, companies, filterOptions]);
 
-  // Helper function to check if filters are active
   const isFilterActive = () => {
     return (
       filterOptions.jobPositions.length > 0 || 
@@ -224,7 +212,6 @@ export function AppSidebar() {
     );
   };
 
-  // Helper function to clear all filters
   const clearAllFilters = () => {
     setFilterOptions({
       jobPositions: [],
@@ -234,8 +221,11 @@ export function AppSidebar() {
     });
   };
 
-  // Toggle job position in filter
-  const toggleJobPositionFilter = (position: string) => {
+  const toggleJobPositionFilter = (position: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
     setFilterOptions(prev => {
       if (prev.jobPositions.includes(position)) {
         return {
@@ -251,24 +241,33 @@ export function AppSidebar() {
     });
   };
 
-  // Toggle urgency filter
-  const toggleUrgencyFilter = (urgency: UrgencyLevel) => {
+  const toggleUrgencyFilter = (urgency: UrgencyLevel, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
     setFilterOptions(prev => ({
       ...prev,
       urgency: prev.urgency === urgency ? null : urgency
     }));
   };
 
-  // Set specific in-progress state
-  const setInProgressStateFilter = (state: string | null) => {
+  const setInProgressStateFilter = (state: string | null, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
     setFilterOptions(prev => ({
       ...prev,
       inProgressState: state
     }));
   };
 
-  // Toggle hasInProgress filter
-  const toggleHasInProgressFilter = () => {
+  const toggleHasInProgressFilter = (event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
     setFilterOptions(prev => ({
       ...prev,
       hasInProgress: !prev.hasInProgress
@@ -529,7 +528,7 @@ export function AppSidebar() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={clearAllFilters} 
+                      onClick={(e) => { e.stopPropagation(); clearAllFilters(); }} 
                       className="text-xs h-6"
                       disabled={!isFilterActive()}
                     >
@@ -537,14 +536,13 @@ export function AppSidebar() {
                     </Button>
                   </div>
 
-                  {/* Active filters display */}
                   <div className="flex flex-wrap gap-1 mb-2">
                     {filterOptions.jobPositions.map(job => (
                       <Badge 
                         key={`job-${job}`} 
                         variant="secondary" 
                         className="flex items-center gap-1 bg-primary/20 text-xs"
-                        onClick={() => toggleJobPositionFilter(job)}
+                        onClick={(e) => toggleJobPositionFilter(job, e)}
                       >
                         <BriefcaseBusiness className="h-3 w-3" />
                         {job}
@@ -556,7 +554,7 @@ export function AppSidebar() {
                       <Badge 
                         variant="secondary" 
                         className={`flex items-center gap-1 text-xs ${getUrgencyColor(filterOptions.urgency)}`}
-                        onClick={() => toggleUrgencyFilter(filterOptions.urgency!)}
+                        onClick={(e) => toggleUrgencyFilter(filterOptions.urgency!, e)}
                       >
                         <AlertCircle className="h-3 w-3" />
                         {filterOptions.urgency}
@@ -568,7 +566,7 @@ export function AppSidebar() {
                       <Badge 
                         variant="secondary" 
                         className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
-                        onClick={toggleHasInProgressFilter}
+                        onClick={(e) => toggleHasInProgressFilter(e)}
                       >
                         <Clock className="h-3 w-3" />
                         Com estado
@@ -580,7 +578,7 @@ export function AppSidebar() {
                       <Badge 
                         variant="secondary" 
                         className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
-                        onClick={() => setInProgressStateFilter(null)}
+                        onClick={(e) => setInProgressStateFilter(null, e)}
                       >
                         <Clock className="h-3 w-3" />
                         {filterOptions.inProgressState}
@@ -591,7 +589,6 @@ export function AppSidebar() {
                   
                   <div className="text-xs font-medium mt-2">Adicionar filtros:</div>
                   
-                  {/* Job positions filter */}
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -614,7 +611,7 @@ export function AppSidebar() {
                         <ScrollArea className="h-[200px] pr-3">
                           <div className="space-y-2">
                             {availableJobPositions.map(job => (
-                              <div key={job} className="flex items-center space-x-2">
+                              <div key={job} className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                                 <Checkbox 
                                   id={`job-${job}`}
                                   checked={filterOptions.jobPositions.includes(job)}
@@ -629,7 +626,6 @@ export function AppSidebar() {
                     </PopoverContent>
                   </Popover>
                   
-                  {/* Urgency filter */}
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -654,7 +650,7 @@ export function AppSidebar() {
                             size="sm" 
                             variant={filterOptions.urgency === 'Baixa' ? "default" : "outline"} 
                             className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={() => toggleUrgencyFilter('Baixa')}
+                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Baixa'); }}
                           >
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
                             Baixa
@@ -664,7 +660,7 @@ export function AppSidebar() {
                             size="sm" 
                             variant={filterOptions.urgency === 'Média' ? "default" : "outline"} 
                             className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={() => toggleUrgencyFilter('Média')}
+                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Média'); }}
                           >
                             <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
                             Média
@@ -674,7 +670,7 @@ export function AppSidebar() {
                             size="sm" 
                             variant={filterOptions.urgency === 'Alta' ? "default" : "outline"} 
                             className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={() => toggleUrgencyFilter('Alta')}
+                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Alta'); }}
                           >
                             <div className="w-2 h-2 rounded-full bg-red-500"></div>
                             Alta
@@ -685,7 +681,6 @@ export function AppSidebar() {
                     </PopoverContent>
                   </Popover>
                   
-                  {/* In-progress states filter */}
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button 
@@ -704,11 +699,11 @@ export function AppSidebar() {
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2" align="start">
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
                           <Checkbox 
                             id="has-in-progress"
                             checked={filterOptions.hasInProgress}
-                            onCheckedChange={toggleHasInProgressFilter}
+                            onCheckedChange={() => toggleHasInProgressFilter()}
                           />
                           <label htmlFor="has-in-progress" className="text-sm cursor-pointer">
                             Qualquer estado
@@ -724,9 +719,12 @@ export function AppSidebar() {
                                 size="sm" 
                                 variant={filterOptions.inProgressState === state ? "default" : "outline"} 
                                 className="text-xs h-7 flex items-center gap-1 justify-start w-full" 
-                                onClick={() => setInProgressStateFilter(
-                                  filterOptions.inProgressState === state ? null : state
-                                )}
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setInProgressStateFilter(
+                                    filterOptions.inProgressState === state ? null : state
+                                  ); 
+                                }}
                               >
                                 <Clock className="h-3 w-3" />
                                 {state}
@@ -803,7 +801,6 @@ export function AppSidebar() {
         Versão 1.0
       </SidebarFooter>
 
-      {/* Dialog para gerenciar vagas/empregos */}
       <Dialog
         open={showJobPositionsManager}
         onOpenChange={setShowJobPositionsManager}
@@ -862,7 +859,6 @@ export function AppSidebar() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para gerenciar estados "Decorrer" */}
       <Dialog
         open={showDecorrerManager}
         onOpenChange={setShowDecorrerManager}
@@ -888,7 +884,6 @@ export function AppSidebar() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog para confirmar exclusão de empresa */}
       <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -904,7 +899,6 @@ export function AppSidebar() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog para editar empresa */}
       <Dialog 
         open={!!editingCompany} 
         onOpenChange={(open) => {

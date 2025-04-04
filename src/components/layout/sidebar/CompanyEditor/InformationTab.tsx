@@ -1,3 +1,4 @@
+
 import { Company, UrgencyLevel } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -79,7 +80,12 @@ export function InformationTab({
     setSelectedJobPosition("none");
   };
   
-  const handleRemoveJobPosition = (position: string) => {
+  const handleRemoveJobPosition = (position: string, e?: React.MouseEvent) => {
+    // Prevent event propagation to elements behind
+    if (e) {
+      e.stopPropagation();
+    }
+    
     const updatedPositions = currentJobPositions.filter(p => p !== position);
     setCurrentJobPositions(updatedPositions);
     form.setValue('jobPositions', updatedPositions);
@@ -150,7 +156,7 @@ export function InformationTab({
           <Button 
             type="button" 
             size="icon" 
-            onClick={handleAddJobPosition}
+            onClick={(e) => { e.stopPropagation(); handleAddJobPosition(); }}
             disabled={selectedJobPosition === "none" || selectedJobPosition === "custom"}
           >
             <Plus className="h-4 w-4" />
@@ -165,7 +171,7 @@ export function InformationTab({
               placeholder="Digite a vaga personalizada"
               className="flex-1"
             />
-            <Button size="sm" onClick={handleCustomJobPosition}>Adicionar</Button>
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleCustomJobPosition(); }}>Adicionar</Button>
           </div>
         )}
         
@@ -179,7 +185,7 @@ export function InformationTab({
                     variant="ghost" 
                     size="icon" 
                     className="h-4 w-4 p-0" 
-                    onClick={() => handleRemoveJobPosition(position)}
+                    onClick={(e) => handleRemoveJobPosition(position, e)}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -245,7 +251,7 @@ export function InformationTab({
         </Select>
       </div>
       
-      <Button className="w-full" onClick={handleSave}>
+      <Button className="w-full" onClick={(e) => { e.stopPropagation(); handleSave(); }}>
         Salvar alterações
       </Button>
     </div>
