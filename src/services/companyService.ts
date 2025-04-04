@@ -19,20 +19,19 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
   try {
     console.log('Fetching job positions for company:', companyId);
     
-    // Fix the RPC type parameters and response handling
-    const { data: jobPositionsData, error: jobPositionsError } = await supabase
+    const { data, error } = await supabase
       .rpc('get_company_job_positions', {
         company_id_param: companyId
       });
     
-    if (jobPositionsError) {
-      console.error('Error fetching job positions:', jobPositionsError);
+    if (error) {
+      console.error('Error fetching job positions:', error);
       return [];
     } 
     
-    if (jobPositionsData) {
-      // Properly cast the response to expected type
-      const jobPositions = (jobPositionsData as Array<{job_position: string}>).map(item => item.job_position);
+    if (data) {
+      // Format the response - data is an array of objects with job_position property
+      const jobPositions = data.map((item: { job_position: string }) => item.job_position);
       console.log('Job positions fetched:', jobPositions);
       return jobPositions;
     }
@@ -135,7 +134,7 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
     console.log('Updating job positions for company:', id);
     console.log('New job positions:', jobPositions);
     
-    // Fix the RPC type parameters for delete operation
+    // First, delete all existing job positions
     const { error: deleteError } = await supabase
       .rpc('delete_company_job_positions', {
         company_id_param: id
@@ -146,9 +145,10 @@ export const updateCompanyJobPositions = async (id: string, jobPositions: string
       throw deleteError;
     }
     
+    // Only add new positions if there are any
     if (jobPositions.length > 0) {
+      // Add each position one by one
       for (const position of jobPositions) {
-        // Fix the RPC type parameters for add operation
         const { data: result, error: addError } = await supabase
           .rpc('add_company_job_position', { 
             company_id_param: id,

@@ -302,7 +302,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_company_job_position: {
+        Args: {
+          company_id_param: string
+          job_position_param: string
+        }
+        Returns: string
+      }
+      delete_company_job_positions: {
+        Args: {
+          company_id_param: string
+        }
+        Returns: undefined
+      }
+      get_company_job_positions: {
+        Args: {
+          company_id_param: string
+        }
+        Returns: {
+          job_position: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
