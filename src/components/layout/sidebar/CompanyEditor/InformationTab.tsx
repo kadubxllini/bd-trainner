@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Company, UrgencyLevel } from '@/types';
 import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { X, AlertCircle, BriefcaseBusiness, Clock } from 'lucide-react';
+import { useMessages } from '@/context/MessageContext';
 
 interface InformationTabProps {
   form: any;
@@ -40,15 +41,7 @@ export function InformationTab({
   const selectedJobPositions = form.watch('jobPositions') || [];
   const selectedInProgress = form.watch('inProgress');
   const selectedUrgency = form.watch('urgency') as UrgencyLevel;
-  const [availableInProgressStates, setAvailableInProgressStates] = useState<string[]>([
-    'Aguardando retorno',
-    'Enviando currículo',
-    'Processo seletivo',
-    'Entrevista agendada',
-    'Teste técnico',
-    'Recusado',
-    'Aceito'
-  ]);
+  const { availableInProgressStates } = useMessages();
   
   const removeJobPosition = (position: string) => {
     const currentPositions = form.getValues().jobPositions || [];

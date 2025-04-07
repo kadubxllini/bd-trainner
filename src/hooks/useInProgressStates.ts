@@ -36,6 +36,7 @@ export const useInProgressStates = () => {
       console.log("Successfully added in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companyInProgressStates'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
@@ -50,6 +51,7 @@ export const useInProgressStates = () => {
       console.log("Successfully deleted in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companyInProgressStates'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
@@ -97,11 +99,21 @@ export const useInProgressStates = () => {
     }
   };
 
+  // New function to fetch and handle company-specific in-progress states
+  const useCompanyInProgressStates = (companyId: string | undefined) => {
+    return useQuery({
+      queryKey: ['companyInProgressStates', companyId],
+      queryFn: () => companyId ? inProgressService.fetchCompanyInProgressStates(companyId) : Promise.resolve([]),
+      enabled: !!companyId,
+    });
+  };
+
   return {
     inProgressStates,
     addInProgressState,
     deleteInProgressState,
     refreshInProgressStates,
-    isLoadingInProgressStates
+    isLoadingInProgressStates,
+    useCompanyInProgressStates
   };
 };
