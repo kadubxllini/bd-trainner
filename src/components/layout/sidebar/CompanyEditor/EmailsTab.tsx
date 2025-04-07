@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface EmailsTabProps {
   company: Company;
@@ -42,26 +43,28 @@ export function EmailsTab({
       {company.emails && company.emails.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">E-mails cadastrados</h3>
-          <div className="space-y-2">
-            {company.emails.map((email) => (
-              <div key={email.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{email.email}</span>
+          <ScrollArea className="h-[200px] pr-2">
+            <div className="space-y-2">
+              {company.emails.map((email) => (
+                <div key={email.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{email.email}</span>
+                    </div>
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDeleteEmail(email.id)} 
+                    className="h-7 w-7 hover:text-destructive"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => onDeleteEmail(email.id)} 
-                  className="h-7 w-7 hover:text-destructive"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       ) : (
         <div className="text-center text-muted-foreground py-4">

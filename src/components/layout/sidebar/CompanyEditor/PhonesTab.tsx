@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Phone, Trash } from "lucide-react";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface PhonesTabProps {
   company: Company;
@@ -42,24 +43,26 @@ export function PhonesTab({
       {company.phones && company.phones.length > 0 ? (
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Telefones cadastrados</h3>
-          <div className="space-y-2">
-            {company.phones.map((phone) => (
-              <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{phone.phone}</span>
+          <ScrollArea className="h-[200px] pr-2">
+            <div className="space-y-2">
+              {company.phones.map((phone) => (
+                <div key={phone.id} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{phone.phone}</span>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDeletePhone(phone.id)} 
+                    className="h-7 w-7 hover:text-destructive"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => onDeletePhone(phone.id)} 
-                  className="h-7 w-7 hover:text-destructive"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       ) : (
         <div className="text-center text-muted-foreground py-4">

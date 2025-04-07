@@ -265,7 +265,7 @@ const MessagesView = () => {
           )}
         </div>
         
-        <ScrollArea className="flex-1 p-4 h-full">
+        <ScrollArea className="flex-1 p-4">
           <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
