@@ -146,11 +146,13 @@ export function InformationTab({
               <SelectValue placeholder="Selecione a vaga" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Nenhuma vaga</SelectItem>
-              {availableJobPositions.map(job => (
-                <SelectItem key={job} value={job}>{job}</SelectItem>
-              ))}
-              <SelectItem value="custom">Personalizada...</SelectItem>
+              <ScrollArea className="max-h-[200px]">
+                <SelectItem value="none">Nenhuma vaga</SelectItem>
+                {availableJobPositions.map(job => (
+                  <SelectItem key={job} value={job}>{job}</SelectItem>
+                ))}
+                <SelectItem value="custom">Personalizada...</SelectItem>
+              </ScrollArea>
             </SelectContent>
           </Select>
           <Button 
@@ -238,15 +240,17 @@ export function InformationTab({
             <SelectValue placeholder="Selecione o estado" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Nenhum</SelectItem>
-            {availableInProgressStates.map((state) => (
-              <SelectItem key={state} value={state}>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{state}</span>
-                </div>
-              </SelectItem>
-            ))}
+            <ScrollArea className="max-h-[200px]">
+              <SelectItem value="none">Nenhum</SelectItem>
+              {availableInProgressStates.map((state) => (
+                <SelectItem key={state} value={state}>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{state}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </ScrollArea>
           </SelectContent>
         </Select>
       </div>
