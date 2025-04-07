@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Company } from '@/types';
@@ -22,7 +23,7 @@ export function DecorrerTab({
   onDeleteGlobalInProgressState,
 }: DecorrerTabProps) {
   const [newState, setNewState] = useState<string>('');
-  const { addCompanyInProgressState, deleteCompanyInProgressState, addInProgressState, deleteInProgressState } = useMessages();
+  const { addCompanyInProgressState, deleteCompanyInProgressState } = useMessages();
 
   const handleAddState = async () => {
     if (!newState.trim()) {
@@ -188,7 +189,10 @@ export function DecorrerTab({
           ) : (
             <div className="flex flex-wrap gap-2">
               {availableInProgressStates.map(state => (
-                <Badge key={state} variant="secondary">{state}</Badge>
+                <Badge key={state} variant="secondary" className="flex items-center gap-1 bg-primary/20 text-xs">
+                  <Clock className="h-3 w-3" />
+                  {state}
+                </Badge>
               ))}
             </div>
           )}

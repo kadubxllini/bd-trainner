@@ -26,6 +26,26 @@ export const fetchInProgressStates = async () => {
   }
 };
 
+export const fetchCompanyInProgressStates = async (companyId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('company_in_progress')
+      .select('id, description')
+      .eq('company_id', companyId)
+      .order('description', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching company in-progress states:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.error('Exception fetching company in-progress states:', err);
+    return [];
+  }
+};
+
 export const addInProgressStateToDatabase = async (state: string) => {
   console.log("Adding state to database:", state);
   

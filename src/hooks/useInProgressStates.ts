@@ -35,6 +35,7 @@ export const useInProgressStates = () => {
     onSuccess: () => {
       console.log("Successfully added in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
@@ -48,6 +49,7 @@ export const useInProgressStates = () => {
     onSuccess: () => {
       console.log("Successfully deleted in-progress state");
       queryClient.invalidateQueries({ queryKey: ['inProgressStates'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
       refetchInProgressStates();
     },
     onError: (error: any) => {
