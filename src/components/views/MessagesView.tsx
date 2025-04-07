@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -176,14 +175,12 @@ const MessagesView = () => {
     return format(new Date(timestamp), "HH:mm", { locale: pt });
   };
   
-  // Make sure messages is always an array even if it's undefined
   const filteredMessages = (messages || []).filter(message => {
     if (showAllMessages) return true;
     
     if (selectedDate) {
       const messageDate = new Date(message.timestamp);
       
-      // Normalize dates to avoid timezone issues
       const targetDateNormalized = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
@@ -198,7 +195,6 @@ const MessagesView = () => {
         0, 0, 0, 0
       );
       
-      // Compare dates by year, month, and day
       return (
         targetDateNormalized.getFullYear() === messageDateNormalized.getFullYear() &&
         targetDateNormalized.getMonth() === messageDateNormalized.getMonth() &&
@@ -209,7 +205,6 @@ const MessagesView = () => {
     return true;
   });
   
-  // Also ensure that we handle the case when messages is undefined
   const groupedMessages = showAllMessages
     ? (messages || []).reduce((groups: Record<string, Message[]>, message) => {
         const messageDate = new Date(message.timestamp);

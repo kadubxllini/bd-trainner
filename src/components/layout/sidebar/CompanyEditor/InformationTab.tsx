@@ -1,7 +1,12 @@
 
-import { Company, UrgencyLevel } from "@/types";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { Company, UrgencyLevel } from '@/types';
+import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -9,21 +14,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UseFormReturn } from "react-hook-form";
-import { toast } from "sonner";
-import { X, Plus, Clock } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useMessages } from '@/context/MessageContext';
+import { X, AlertCircle, BriefcaseBusiness, Clock } from 'lucide-react';
 
 interface InformationTabProps {
-  form: UseFormReturn<{
-    name: string;
-    jobPositions: string[];
-    urgency: UrgencyLevel;
-    inProgress: string;
-  }>;
+  form: any;
   company: Company;
   availableJobPositions: string[];
   customJobPosition: string;
@@ -31,10 +25,6 @@ interface InformationTabProps {
   handleJobPositionChange: (value: string) => void;
   applyCustomJobPosition: () => void;
   onSave: () => void;
-  newInProgressState?: string;
-  setNewInProgressState?: (value: string) => void;
-  onAddInProgressState?: () => void;
-  onDeleteInProgressState?: (id: string) => void;
 }
 
 export function InformationTab({
@@ -45,219 +35,196 @@ export function InformationTab({
   setCustomJobPosition,
   handleJobPositionChange,
   applyCustomJobPosition,
-  onSave,
-  newInProgressState,
-  setNewInProgressState,
-  onAddInProgressState,
-  onDeleteInProgressState,
+  onSave
 }: InformationTabProps) {
-  const [selectedJobPosition, setSelectedJobPosition] = useState<string>("none");
-  const [currentJobPositions, setCurrentJobPositions] = useState<string[]>([]);
-  const { availableInProgressStates } = useMessages();
-
-  useEffect(() => {
-    // Initialize current positions from form
-    const positions = form.getValues().jobPositions || [];
-    setCurrentJobPositions(positions);
-    console.log("Initializing job positions:", positions);
-  }, [form]);
+  const selectedJobPositions = form.watch('jobPositions') || [];
+  const selectedInProgress = form.watch('inProgress');
+  const selectedUrgency = form.watch('urgency') as UrgencyLevel;
+  const [availableInProgressStates, setAvailableInProgressStates] = useState<string[]>([
+    'Aguardando retorno',
+    'Enviando currículo',
+    'Processo seletivo',
+    'Entrevista agendada',
+    'Teste técnico',
+    'Recusado',
+    'Aceito'
+  ]);
   
-  const handleAddJobPosition = () => {
-    if (selectedJobPosition === "none" || selectedJobPosition === "custom") {
-      return;
-    }
-    
-    // Prevent duplicate job positions
-    if (currentJobPositions.includes(selectedJobPosition)) {
-      toast.error("Esta vaga já foi adicionada");
-      return;
-    }
-    
-    const updatedPositions = [...currentJobPositions, selectedJobPosition];
-    setCurrentJobPositions(updatedPositions);
-    form.setValue('jobPositions', updatedPositions);
-    console.log("Updated job positions after add:", updatedPositions);
-    setSelectedJobPosition("none");
+  const removeJobPosition = (position: string) => {
+    const currentPositions = form.getValues().jobPositions || [];
+    form.setValue('jobPositions', currentPositions.filter(p => p !== position));
   };
   
-  const handleRemoveJobPosition = (position: string, e?: React.MouseEvent) => {
-    // Prevent event propagation to elements behind
-    if (e) {
-      e.stopPropagation();
+  const getUrgencyColor = (urgency: UrgencyLevel) => {
+    switch(urgency) {
+      case 'Baixa': return 'bg-green-100 text-green-800';
+      case 'Média': return 'bg-yellow-100 text-yellow-800';
+      case 'Alta': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-    
-    const updatedPositions = currentJobPositions.filter(p => p !== position);
-    setCurrentJobPositions(updatedPositions);
-    form.setValue('jobPositions', updatedPositions);
-    console.log("Updated job positions after remove:", updatedPositions);
   };
   
-  const handleCustomJobPosition = () => {
-    if (!customJobPosition.trim()) {
-      toast.error("Digite uma vaga personalizada");
-      return;
+  const getUrgencyIndicator = (urgency: UrgencyLevel) => {
+    switch(urgency) {
+      case 'Baixa': return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
+      case 'Média': return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
+      case 'Alta': return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
+      default: return null;
     }
-    
-    // Prevent duplicate job positions
-    if (currentJobPositions.includes(customJobPosition)) {
-      toast.error("Esta vaga já foi adicionada");
-      return;
-    }
-    
-    const updatedPositions = [...currentJobPositions, customJobPosition];
-    setCurrentJobPositions(updatedPositions);
-    form.setValue('jobPositions', updatedPositions);
-    console.log("Updated job positions after custom add:", updatedPositions);
-    setCustomJobPosition('');
-  };
-  
-  const handleSave = () => {
-    const { name } = form.getValues();
-    
-    if (!name.trim()) {
-      toast.error("Nome da empresa é obrigatório");
-      return;
-    }
-    
-    console.log("Saving job positions:", currentJobPositions);
-    onSave();
   };
   
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="name" className="text-sm font-medium">Nome da empresa</label>
-        <Input
-          id="name"
-          {...form.register('name')}
-          placeholder="Nome da empresa"
-          className="w-full"
+    <Form {...form}>
+      <div className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome da empresa</FormLabel>
+              <FormControl>
+                <Input placeholder="Nome da empresa" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
         />
-      </div>
-      
-      <div className="space-y-2">
-        <label htmlFor="jobPosition" className="text-sm font-medium">Vagas</label>
-        <div className="flex gap-2">
-          <Select
-            value={selectedJobPosition}
-            onValueChange={setSelectedJobPosition}
-          >
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Selecione a vaga" />
-            </SelectTrigger>
-            <SelectContent>
-              <ScrollArea className="max-h-[200px]">
-                <SelectItem value="none">Nenhuma vaga</SelectItem>
-                {availableJobPositions.map(job => (
-                  <SelectItem key={job} value={job}>{job}</SelectItem>
-                ))}
-                <SelectItem value="custom">Personalizada...</SelectItem>
-              </ScrollArea>
-            </SelectContent>
-          </Select>
-          <Button 
-            type="button" 
-            size="icon" 
-            onClick={(e) => { e.stopPropagation(); handleAddJobPosition(); }}
-            disabled={selectedJobPosition === "none" || selectedJobPosition === "custom"}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+        
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Vagas de interesse</h3>
+          
+          <div className="flex flex-wrap gap-1">
+            {selectedJobPositions.map(position => (
+              <Badge 
+                key={position} 
+                variant="secondary"
+                className="flex items-center gap-1 bg-primary/10"
+              >
+                <BriefcaseBusiness className="h-3 w-3" />
+                {position}
+                <X 
+                  className="h-3 w-3 ml-1 cursor-pointer" 
+                  onClick={() => removeJobPosition(position)} 
+                />
+              </Badge>
+            ))}
+          </div>
+          
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <Select onValueChange={handleJobPositionChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione a vaga" />
+                </SelectTrigger>
+                <SelectContent>
+                  <ScrollArea className="h-[200px]">
+                    <SelectItem value="none">Nenhuma vaga</SelectItem>
+                    {availableJobPositions.map(job => (
+                      <SelectItem key={job} value={job}>{job}</SelectItem>
+                    ))}
+                    <SelectItem value="custom">Personalizada...</SelectItem>
+                  </ScrollArea>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button 
+              type="button" 
+              size="sm" 
+              variant="secondary"
+              onClick={onSave}
+            >
+              Salvar
+            </Button>
+          </div>
+          
+          {customJobPosition !== undefined && (
+            <div className="flex gap-2">
+              <Input
+                placeholder="Digite a vaga personalizada"
+                value={customJobPosition}
+                onChange={(e) => setCustomJobPosition(e.target.value)}
+              />
+              <Button 
+                type="button" 
+                size="sm" 
+                onClick={applyCustomJobPosition}
+              >
+                Adicionar
+              </Button>
+            </div>
+          )}
         </div>
         
-        {selectedJobPosition === "custom" && (
-          <div className="flex gap-2 mt-2">
-            <Input
-              value={customJobPosition}
-              onChange={(e) => setCustomJobPosition(e.target.value)}
-              placeholder="Digite a vaga personalizada"
-              className="flex-1"
-            />
-            <Button size="sm" onClick={(e) => { e.stopPropagation(); handleCustomJobPosition(); }}>Adicionar</Button>
-          </div>
-        )}
+        <FormField
+          control={form.control}
+          name="urgency"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Urgência de contato</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  variant={selectedUrgency === 'Baixa' ? 'default' : 'outline'}
+                  className="w-full flex items-center justify-start gap-2 h-12"
+                  onClick={() => form.setValue('urgency', 'Baixa')}
+                >
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span>Baixa</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={selectedUrgency === 'Média' ? 'default' : 'outline'}
+                  className="w-full flex items-center justify-start gap-2 h-12"
+                  onClick={() => form.setValue('urgency', 'Média')}
+                >
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <span>Média</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant={selectedUrgency === 'Alta' ? 'default' : 'outline'}
+                  className="w-full flex items-center justify-start gap-2 h-12"
+                  onClick={() => form.setValue('urgency', 'Alta')}
+                >
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span>Alta</span>
+                </Button>
+              </div>
+            </FormItem>
+          )}
+        />
         
-        {currentJobPositions.length > 0 && (
-          <ScrollArea className="h-20 p-2 border rounded-md">
-            <div className="flex flex-wrap gap-2">
-              {currentJobPositions.map((position, index) => (
-                <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {position}
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-4 w-4 p-0" 
-                    onClick={(e) => handleRemoveJobPosition(position, e)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </Badge>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Estado do Decorrer</h3>
+          
+          <FormField
+            control={form.control}
+            name="inProgress"
+            render={({ field }) => (
+              <Select 
+                value={field.value || ''} 
+                onValueChange={(value) => form.setValue('inProgress', value === 'none' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <ScrollArea className="h-[200px]">
+                    <SelectItem value="none">Nenhum</SelectItem>
+                    {availableInProgressStates.map((state) => (
+                      <SelectItem key={state} value={state}>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          <span>{state}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </ScrollArea>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
       </div>
-      
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Urgência</label>
-        <Select
-          value={form.watch('urgency')}
-          onValueChange={(value) => form.setValue('urgency', value as UrgencyLevel)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione a urgência" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Baixa" className="flex items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <span>Baixa</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="Média" className="flex items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                <span>Média</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="Alta" className="flex items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                <span>Alta</span>
-              </div>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Estado Decorrer</label>
-        <Select
-          value={form.watch('inProgress') || "none"}
-          onValueChange={(value) => form.setValue('inProgress', value === "none" ? "" : value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <ScrollArea className="max-h-[200px]">
-              <SelectItem value="none">Nenhum</SelectItem>
-              {availableInProgressStates.map((state) => (
-                <SelectItem key={state} value={state}>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>{state}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </ScrollArea>
-          </SelectContent>
-        </Select>
-      </div>
-      
-      <Button className="w-full" onClick={(e) => { e.stopPropagation(); handleSave(); }}>
-        Salvar alterações
-      </Button>
-    </div>
+    </Form>
   );
 }
