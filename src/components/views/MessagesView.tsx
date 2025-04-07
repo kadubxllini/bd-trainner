@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import CalendarView from './CalendarView';
 import DatePicker from '@/components/DatePicker';
-import { format, startOfDay, isEqual } from 'date-fns';
+import { format, startOfDay, isEqual, addDays } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
@@ -167,7 +167,7 @@ const MessagesView = () => {
   };
   
   const formatMessageDate = (timestamp: number) => {
-    const date = new Date(timestamp);
+    const date = addDays(new Date(timestamp), 1);
     return format(date, "PPP", { locale: pt });
   };
   
@@ -250,7 +250,7 @@ const MessagesView = () => {
           </h2>
           {selectedDate && !showAllMessages && (
             <div className="text-sm text-muted-foreground">
-              {format(selectedDate, "PPP", { locale: pt })}
+              {format(addDays(selectedDate, 1), "PPP", { locale: pt })}
             </div>
           )}
           {showAllMessages && (
@@ -285,7 +285,7 @@ const MessagesView = () => {
                   <div key={date} className="mb-8">
                     <div className="sticky top-2 z-10 mb-4">
                       <div className="inline-block bg-primary/10 text-primary rounded-full px-3 py-1 text-sm font-medium">
-                        {format(new Date(date), "PPP", { locale: pt })}
+                        {format(addDays(new Date(date), 1), "PPP", { locale: pt })}
                       </div>
                     </div>
                     <div className="space-y-4">

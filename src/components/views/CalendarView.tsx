@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useMessages } from "@/context/MessageContext";
 import { Button } from "@/components/ui/button";
@@ -93,7 +93,7 @@ const CalendarView = ({ onSelectDate, onShowAllMessages, isVisible }: CalendarVi
       
       {selectedDate && (
         <div className="mt-2 text-center text-sm text-muted-foreground">
-          Visualizando mensagens de: <span className="font-medium">{format(selectedDate, "PPP", { locale: ptBR })}</span>
+          Visualizando mensagens de: <span className="font-medium">{format(addDays(selectedDate, 1), "PPP", { locale: ptBR })}</span>
         </div>
       )}
     </div>
