@@ -1,93 +1,32 @@
+
 import { 
   Sidebar, 
   SidebarContent, 
   SidebarGroup, 
-  SidebarHeader,
+  SidebarHeader as SidebarHeaderBase,
   SidebarFooter,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/context/MessageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectors } from "@/hooks/useSelectors";
-import { 
-  Building, 
-  Plus, 
-  Pencil, 
-  Trash, 
-  LogOut, 
-  X, 
-  Search, 
-  Mail, 
-  Phone, 
-  User, 
-  Filter,
-  AlertCircle,
-  Clock,
-  BriefcaseBusiness,
-  Check,
-  UserCog,
-} from "lucide-react";
+import { Dialog } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Company, CompanyEmail, CompanyPhone, CompanyContact, UrgencyLevel, InProgressState } from "@/types";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Company } from "@/types";
 import { CompanyList } from "./sidebar/CompanyList";
-import { InformationTab } from "./sidebar/CompanyEditor/InformationTab";
-import { EmailsTab } from "./sidebar/CompanyEditor/EmailsTab";
-import { PhonesTab } from "./sidebar/CompanyEditor/PhonesTab";
-import { ContactsTab } from "./sidebar/CompanyEditor/ContactsTab";
+import { NewCompanyForm } from "./sidebar/NewCompanyForm";
+import { JobPositionsManager } from "./sidebar/managers/JobPositionsManager";
+import { SelectorsManager } from "./sidebar/managers/SelectorsManager";
+import { SidebarHeader } from "./sidebar/SidebarHeader";
+import { SidebarToolbar } from "./sidebar/SidebarToolbar";
+import { CompanyDeleteDialog } from "./sidebar/CompanyDeleteDialog";
 import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
 interface FilterOptions {
   jobPositions: string[];
-  urgency: UrgencyLevel | null;
+  urgency: string | null;
   inProgressState: string | null;
   hasInProgress: boolean;
   selector: string | null;
@@ -101,12 +40,6 @@ export function AppSidebar() {
     selectCompany,
     updateCompany,
     deleteCompany,
-    addCompanyEmail,
-    deleteCompanyEmail,
-    addCompanyPhone,
-    deleteCompanyPhone,
-    addCompanyContact,
-    deleteCompanyContact,
     isLoading,
     availableJobPositions,
     addJobPosition,
@@ -120,12 +53,6 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { setOpenMobile } = useSidebar();
   
-  const [newCompanyName, setNewCompanyName] = useState('');
-  const [showNewCompanyForm, setShowNewCompanyForm] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [newEmail, setNewEmail] = useState('');
-  const [newPhone, setNewPhone] = useState('');
-  const [newContact, setNewContact] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     jobPositions: [],
@@ -138,23 +65,10 @@ export function AppSidebar() {
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
-  const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
-  const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
-  const [newGlobalSelector, setNewGlobalSelector] = useState('');
   const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
   const [showDecorrerManager, setShowDecorrerManager] = useState(false);
   const [showSelectorsManager, setShowSelectorsManager] = useState(false);
   const isMobile = useIsMobile();
-
-  const form = useForm({
-    defaultValues: {
-      name: '',
-      jobPositions: [] as string[],
-      urgency: 'Média' as UrgencyLevel,
-      inProgress: '',
-      selector: ''
-    }
-  });
 
   useEffect(() => {
     let filtered = [...companies];
@@ -256,7 +170,7 @@ export function AppSidebar() {
     });
   };
 
-  const toggleUrgencyFilter = (urgency: UrgencyLevel, event?: React.MouseEvent) => {
+  const toggleUrgencyFilter = (urgency: any, event?: React.MouseEvent) => {
     if (event) {
       event.stopPropagation();
     }
@@ -300,68 +214,10 @@ export function AppSidebar() {
     }));
   };
 
-  const handleCreateCompany = () => {
-    if (newCompanyName.trim()) {
-      createCompany(newCompanyName);
-      setNewCompanyName('');
-      setShowNewCompanyForm(false);
+  const handleCreateCompany = (name: string) => {
+    if (name.trim()) {
+      createCompany(name);
     }
-  };
-
-  const startEditingCompany = (company: Company) => {
-    setEditingCompany(company);
-    form.reset({
-      name: company.name,
-      jobPositions: company.jobPositions || [],
-      urgency: company.urgency || 'Média',
-      inProgress: company.inProgress || '',
-      selector: company.selector || ''
-    });
-  };
-
-  const saveEditedCompany = () => {
-    if (editingCompany) {
-      const formData = form.getValues();
-      console.log("Saving company with job positions:", formData.jobPositions);
-      
-      if (formData.name.trim()) {
-        updateCompany(editingCompany.id, { 
-          name: formData.name,
-          jobPositions: formData.jobPositions,
-          urgency: formData.urgency,
-          inProgress: formData.inProgress,
-          selector: formData.selector
-        });
-      }
-    }
-  };
-
-  const handleAddEmail = () => {
-    if (editingCompany && newEmail.trim()) {
-      addCompanyEmail(editingCompany.id, newEmail);
-      setNewEmail('');
-    }
-  };
-
-  const handleAddPhone = () => {
-    if (editingCompany && newPhone.trim()) {
-      addCompanyPhone(editingCompany.id, newPhone);
-      setNewPhone('');
-    }
-  };
-
-  const handleAddContact = () => {
-    if (editingCompany && newContact.trim()) {
-      addCompanyContact(editingCompany.id, newContact);
-      setNewContact('');
-    }
-  };
-
-  const closeEditDialog = () => {
-    setEditingCompany(null);
-    setNewEmail('');
-    setNewPhone('');
-    setNewContact('');
   };
 
   const handleDeleteCompany = (company: Company) => {
@@ -393,20 +249,10 @@ export function AppSidebar() {
     setShowFilterMenu(!showFilterMenu);
   };
 
-  const handleJobPositionChange = (value: string) => {
-    if (value !== 'none') {
-      const currentPositions = form.getValues().jobPositions || [];
-      if (!currentPositions.includes(value)) {
-        form.setValue('jobPositions', [...currentPositions, value]);
-      }
-    }
-  };
-
-  const handleAddGlobalJobPosition = () => {
-    if (newGlobalJobPosition.trim()) {
-      addJobPosition(newGlobalJobPosition);
-      setNewGlobalJobPosition('');
-      toast.success(`Vaga "${newGlobalJobPosition}" adicionada`);
+  const handleAddGlobalJobPosition = (jobPosition: string) => {
+    if (jobPosition.trim()) {
+      addJobPosition(jobPosition);
+      toast.success(`Vaga "${jobPosition}" adicionada`);
     }
   };
 
@@ -415,11 +261,10 @@ export function AppSidebar() {
     toast.success(`Vaga "${jobPosition}" removida`);
   };
 
-  const handleAddGlobalSelector = () => {
-    if (newGlobalSelector.trim()) {
-      addSelector(newGlobalSelector);
-      setNewGlobalSelector('');
-      toast.success(`Selecionadora "${newGlobalSelector}" adicionada`);
+  const handleAddGlobalSelector = (selector: string) => {
+    if (selector.trim()) {
+      addSelector(selector);
+      toast.success(`Selecionadora "${selector}" adicionada`);
     }
   };
 
@@ -428,50 +273,9 @@ export function AppSidebar() {
     toast.success(`Selecionadora "${selector}" removida`);
   };
 
-  const getUrgencyColor = (urgency?: UrgencyLevel) => {
-    switch(urgency) {
-      case 'Baixa': return 'bg-green-100 text-green-800';
-      case 'Média': return 'bg-yellow-100 text-yellow-800';
-      case 'Alta': return 'bg-red-100 text-red-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'high': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
-    switch(urgency) {
-      case 'Baixa': 
-      case 'low':
-        return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
-      case 'Média':
-      case 'medium':
-        return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
-      case 'Alta':
-      case 'high':
-        return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
-      default: 
-        return null;
-    }
-  };
-
-  const handleDeleteCompanyEmail = async (emailId: string) => {
-    await deleteCompanyEmail(emailId);
-  };
-
-  const handleDeleteCompanyPhone = async (phoneId: string) => {
-    await deleteCompanyPhone(phoneId);
-  };
-
-  const handleDeleteCompanyContact = async (contactId: string) => {
-    await deleteCompanyContact(contactId);
-  };
-
   const handleAddGlobalInProgressState = async (state: string) => {
     if (state.trim()) {
       try {
-        console.log("AppSidebar: Adding global in-progress state:", state);
         await addInProgressState(state);
         toast.success(`Estado "${state}" adicionado`);
       } catch (error) {
@@ -483,7 +287,6 @@ export function AppSidebar() {
 
   const handleDeleteGlobalInProgressState = async (state: string) => {
     try {
-      console.log("AppSidebar: Deleting global in-progress state:", state);
       await deleteInProgressState(state);
       toast.success(`Estado "${state}" removido`);
     } catch (error) {
@@ -494,7 +297,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="py-6 flex items-center justify-between">
+      <SidebarHeaderBase className="py-6 flex items-center justify-between">
         <h1 className="text-lg font-semibold text-center flex-1">Mensageiro</h1>
         {isMobile && (
           <Button 
@@ -503,389 +306,49 @@ export function AppSidebar() {
             className="md:hidden" 
             onClick={() => setOpenMobile(false)}
           >
-            <X className="h-5 w-5" />
+            <SidebarHeader isMobile={isMobile} />
           </Button>
         )}
-      </SidebarHeader>
+      </SidebarHeaderBase>
       
       <SidebarContent>
         {isLoading ? (
           <div className="flex justify-center p-4">Carregando...</div>
         ) : (
           <SidebarGroup>
-            <div className="px-3 py-2 flex justify-between items-center">
-              <h2 className="text-xs font-medium text-muted-foreground">Empresas</h2>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={toggleFilterMenu} className="h-6 px-1.5 relative">
-                  <Filter className="h-3.5 w-3.5" />
-                  {isFilterActive() && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
-                  )}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={toggleSearch} className="h-6 px-1.5">
-                  <Search className="h-3.5 w-3.5" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowJobPositionsManager(true)} 
-                  className="h-6 px-1.5"
-                >
-                  <BriefcaseBusiness className="h-3.5 w-3.5" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowDecorrerManager(true)} 
-                  className="h-6 px-1.5"
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowSelectorsManager(true)} 
-                  className="h-6 px-1.5"
-                >
-                  <UserCog className="h-3.5 w-3.5" />
-                </Button>
-                {user && (
-                  <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-1.5">
-                    <LogOut className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {showFilterMenu && (
-              <div className="px-4 pb-2">
-                <div className="space-y-2 p-2 bg-muted/50 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <div className="text-xs font-medium">Filtros aplicados:</div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={(e) => { e.stopPropagation(); clearAllFilters(); }} 
-                      className="text-xs h-6"
-                      disabled={!isFilterActive()}
-                    >
-                      Limpar
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    {filterOptions.jobPositions.map(job => (
-                      <Badge 
-                        key={`job-${job}`} 
-                        variant="secondary" 
-                        className="flex items-center gap-1 bg-primary/20 text-xs"
-                        onClick={(e) => toggleJobPositionFilter(job, e)}
-                      >
-                        <BriefcaseBusiness className="h-3 w-3" />
-                        {job}
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    ))}
-                    
-                    {filterOptions.urgency && (
-                      <Badge 
-                        variant="secondary" 
-                        className={`flex items-center gap-1 text-xs ${getUrgencyColor(filterOptions.urgency)}`}
-                        onClick={(e) => toggleUrgencyFilter(filterOptions.urgency!, e)}
-                      >
-                        <AlertCircle className="h-3 w-3" />
-                        {filterOptions.urgency}
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    )}
-                    
-                    {filterOptions.hasInProgress && (
-                      <Badge 
-                        variant="secondary" 
-                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
-                        onClick={(e) => toggleHasInProgressFilter(e)}
-                      >
-                        <Clock className="h-3 w-3" />
-                        Com estado
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    )}
-                    
-                    {filterOptions.inProgressState && (
-                      <Badge 
-                        variant="secondary" 
-                        className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
-                        onClick={(e) => setInProgressStateFilter(null, e)}
-                      >
-                        <Clock className="h-3 w-3" />
-                        {filterOptions.inProgressState}
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    )}
-                    
-                    {filterOptions.selector && (
-                      <Badge 
-                        variant="secondary" 
-                        className="flex items-center gap-1 bg-purple-100 text-purple-800 text-xs"
-                        onClick={(e) => setSelectorFilter(null, e)}
-                      >
-                        <UserCog className="h-3 w-3" />
-                        {filterOptions.selector}
-                        <X className="h-3 w-3" />
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <div className="text-xs font-medium mt-2">Adicionar filtros:</div>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
-                      >
-                        <BriefcaseBusiness className="h-3 w-3" />
-                        Vagas
-                        {filterOptions.jobPositions.length > 0 && (
-                          <Badge variant="secondary" className="ml-auto">
-                            {filterOptions.jobPositions.length}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2" align="start">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">Selecione as vagas:</p>
-                        <ScrollArea className="h-[200px] pr-3">
-                          <div className="space-y-2">
-                            {availableJobPositions.map(job => (
-                              <div key={job} className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                                <Checkbox 
-                                  id={`job-${job}`}
-                                  checked={filterOptions.jobPositions.includes(job)}
-                                  onCheckedChange={() => toggleJobPositionFilter(job)}
-                                />
-                                <label htmlFor={`job-${job}`} className="text-sm cursor-pointer">{job}</label>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
-                      >
-                        <AlertCircle className="h-3 w-3" />
-                        Urgência
-                        {filterOptions.urgency && (
-                          <Badge variant="secondary" className={`ml-auto ${getUrgencyColor(filterOptions.urgency)}`}>
-                            {filterOptions.urgency}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2" align="start">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">Selecione a urgência:</p>
-                        <div className="flex flex-col space-y-1">
-                          <Button 
-                            size="sm" 
-                            variant={filterOptions.urgency === 'Baixa' ? "default" : "outline"} 
-                            className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Baixa'); }}
-                          >
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            Baixa
-                            {filterOptions.urgency === 'Baixa' && <Check className="ml-auto h-3 w-3" />}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant={filterOptions.urgency === 'Média' ? "default" : "outline"} 
-                            className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Média'); }}
-                          >
-                            <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
-                            Média
-                            {filterOptions.urgency === 'Média' && <Check className="ml-auto h-3 w-3" />}
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant={filterOptions.urgency === 'Alta' ? "default" : "outline"} 
-                            className="text-xs h-7 flex items-center gap-1 justify-start" 
-                            onClick={(e) => { e.stopPropagation(); toggleUrgencyFilter('Alta'); }}
-                          >
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            Alta
-                            {filterOptions.urgency === 'Alta' && <Check className="ml-auto h-3 w-3" />}
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
-                      >
-                        <Clock className="h-3 w-3" />
-                        Decorrer
-                        {(filterOptions.hasInProgress || filterOptions.inProgressState) && (
-                          <Badge variant="secondary" className="ml-auto bg-blue-100 text-blue-800">
-                            {filterOptions.inProgressState || "Ativo"}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2" align="start">
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2" onClick={(e) => e.stopPropagation()}>
-                          <Checkbox 
-                            id="has-in-progress"
-                            checked={filterOptions.hasInProgress}
-                            onCheckedChange={() => toggleHasInProgressFilter()}
-                          />
-                          <label htmlFor="has-in-progress" className="text-sm cursor-pointer">
-                            Qualquer estado
-                          </label>
-                        </div>
-                        
-                        <p className="text-xs font-medium mt-2">Ou selecione um estado específico:</p>
-                        <ScrollArea className="h-[200px] pr-3">
-                          <div className="space-y-1">
-                            {availableInProgressStates.map(state => (
-                              <Button 
-                                key={state}
-                                size="sm" 
-                                variant={filterOptions.inProgressState === state ? "default" : "outline"} 
-                                className="text-xs h-7 flex items-center gap-1 justify-start w-full" 
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  setInProgressStateFilter(
-                                    filterOptions.inProgressState === state ? null : state
-                                  ); 
-                                }}
-                              >
-                                <Clock className="h-3 w-3" />
-                                {state}
-                                {filterOptions.inProgressState === state && (
-                                  <Check className="ml-auto h-3 w-3" />
-                                )}
-                              </Button>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
-                      >
-                        <UserCog className="h-3 w-3" />
-                        Selecionadora
-                        {filterOptions.selector && (
-                          <Badge variant="secondary" className="ml-auto bg-purple-100 text-purple-800">
-                            {filterOptions.selector}
-                          </Badge>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-2" align="start">
-                      <div className="space-y-2">
-                        <p className="text-xs font-medium">Selecione a selecionadora:</p>
-                        <ScrollArea className="h-[200px] pr-3">
-                          <div className="space-y-1">
-                            {selectors.map(selector => (
-                              <Button 
-                                key={selector}
-                                size="sm" 
-                                variant={filterOptions.selector === selector ? "default" : "outline"} 
-                                className="text-xs h-7 flex items-center gap-1 justify-start w-full" 
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  setSelectorFilter(
-                                    filterOptions.selector === selector ? null : selector
-                                  ); 
-                                }}
-                              >
-                                <UserCog className="h-3 w-3" />
-                                {selector}
-                                {filterOptions.selector === selector && (
-                                  <Check className="ml-auto h-3 w-3" />
-                                )}
-                              </Button>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            )}
-
-            {showSearchInput && (
-              <div className="px-4 pb-2">
-                <Input 
-                  placeholder="Pesquisar empresas..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-8 text-sm"
-                />
-              </div>
-            )}
+            <SidebarToolbar 
+              filterOptions={filterOptions}
+              isFilterActive={isFilterActive}
+              clearAllFilters={clearAllFilters}
+              toggleJobPositionFilter={toggleJobPositionFilter}
+              toggleUrgencyFilter={toggleUrgencyFilter}
+              setInProgressStateFilter={setInProgressStateFilter}
+              setSelectorFilter={setSelectorFilter}
+              toggleHasInProgressFilter={toggleHasInProgressFilter}
+              availableJobPositions={availableJobPositions}
+              availableInProgressStates={availableInProgressStates}
+              selectors={selectors}
+              showFilterMenu={showFilterMenu}
+              toggleFilterMenu={toggleFilterMenu}
+              showSearchInput={showSearchInput}
+              toggleSearch={toggleSearch}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              setShowJobPositionsManager={setShowJobPositionsManager}
+              setShowDecorrerManager={setShowDecorrerManager}
+              setShowSelectorsManager={setShowSelectorsManager}
+              user={user}
+              signOut={signOut}
+            />
 
             <CompanyList
               companies={filteredCompanies}
               activeCompany={activeCompany}
               onCompanySelect={handleCompanySelect}
-              onEditCompany={startEditingCompany}
               onDeleteCompany={handleDeleteCompany}
             />
 
-            {showNewCompanyForm ? (
-              <div className="p-2">
-                <div className="flex gap-2">
-                  <Input
-                    value={newCompanyName}
-                    onChange={(e) => setNewCompanyName(e.target.value)}
-                    placeholder="Nome da empresa"
-                    className="h-9 text-sm"
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={handleCreateCompany}
-                    className="bg-primary/80 hover:bg-primary"
-                  >
-                    Criar
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-2">
-                <Button 
-                  className="w-full"
-                  size="sm"
-                  onClick={() => setShowNewCompanyForm(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Nova Empresa
-                </Button>
-              </div>
-            )}
+            <NewCompanyForm onCreateCompany={handleCreateCompany} />
           </SidebarGroup>
         )}
       </SidebarContent>
@@ -897,68 +360,17 @@ export function AppSidebar() {
         Versão 1.0
       </SidebarFooter>
 
-      <Dialog
-        open={showJobPositionsManager}
-        onOpenChange={setShowJobPositionsManager}
-      >
-        <DialogContent className="sm:max-w-md bg-background">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Vagas</DialogTitle>
-            <DialogDescription>
-              Adicione ou remova vagas disponíveis para todas as empresas.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="flex gap-2">
-              <Input
-                value={newGlobalJobPosition}
-                onChange={(e) => setNewGlobalJobPosition(e.target.value)}
-                placeholder="Nova vaga"
-                className="flex-1"
-              />
-              <Button onClick={handleAddGlobalJobPosition}>Adicionar</Button>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Vagas disponíveis</h3>
-              <ScrollArea className="h-[200px] pr-3">
-                {availableJobPositions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma vaga cadastrada</p>
-                ) : (
-                  <div className="space-y-2">
-                    {availableJobPositions.map(job => (
-                      <div key={job} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <BriefcaseBusiness className="h-4 w-4 text-muted-foreground" />
-                          <span>{job}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteJobPosition(job)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setShowJobPositionsManager(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog open={showJobPositionsManager} onOpenChange={setShowJobPositionsManager}>
+        <JobPositionsManager 
+          availableJobPositions={availableJobPositions}
+          onAddJobPosition={handleAddGlobalJobPosition}
+          onDeleteJobPosition={handleDeleteJobPosition}
+          showJobPositionsManager={showJobPositionsManager}
+          setShowJobPositionsManager={setShowJobPositionsManager}
+        />
       </Dialog>
 
-      <Dialog
-        open={showDecorrerManager}
-        onOpenChange={setShowDecorrerManager}
-      >
+      <Dialog open={showDecorrerManager} onOpenChange={setShowDecorrerManager}>
         <DialogContent className="sm:max-w-md bg-background">
           <DialogHeader>
             <DialogTitle>Gerenciar Estados Decorrer</DialogTitle>
@@ -980,141 +392,21 @@ export function AppSidebar() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={showSelectorsManager}
-        onOpenChange={setShowSelectorsManager}
-      >
-        <DialogContent className="sm:max-w-md bg-background">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Selecionadoras</DialogTitle>
-            <DialogDescription>
-              Adicione ou remova selecionadoras disponíveis para todas as empresas.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="flex gap-2">
-              <Input
-                value={newGlobalSelector}
-                onChange={(e) => setNewGlobalSelector(e.target.value)}
-                placeholder="Nova selecionadora"
-                className="flex-1"
-              />
-              <Button onClick={handleAddGlobalSelector}>Adicionar</Button>
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-medium">Selecionadoras disponíveis</h3>
-              <ScrollArea className="h-[200px] pr-3">
-                {selectors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhuma selecionadora cadastrada</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectors.map(selector => (
-                      <div key={selector} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
-                        <div className="flex items-center gap-2">
-                          <UserCog className="h-4 w-4 text-muted-foreground" />
-                          <span>{selector}</span>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleDeleteSelector(selector)} 
-                          className="h-7 w-7 hover:text-destructive"
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button onClick={() => setShowSelectorsManager(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
+      <Dialog open={showSelectorsManager} onOpenChange={setShowSelectorsManager}>
+        <SelectorsManager 
+          selectors={selectors}
+          onAddSelector={handleAddGlobalSelector}
+          onDeleteSelector={handleDeleteSelector}
+          showSelectorsManager={showSelectorsManager}
+          setShowSelectorsManager={setShowSelectorsManager}
+        />
       </Dialog>
 
-      <AlertDialog open={!!companyToDelete} onOpenChange={(open) => !open && setCompanyToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente a empresa {companyToDelete?.name}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteCompany}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog 
-        open={!!editingCompany} 
-        onOpenChange={(open) => {
-          if (!open) closeEditDialog();
-        }}
-      >
-        <DialogContent className="sm:max-w-md bg-background z-50">
-          <DialogHeader>
-            <DialogTitle>Editar empresa</DialogTitle>
-          </DialogHeader>
-          
-          {editingCompany && (
-            <Tabs defaultValue="info" className="pt-2">
-              <TabsList className="w-full">
-                <TabsTrigger value="info" className="flex-1">Informações</TabsTrigger>
-                <TabsTrigger value="emails" className="flex-1">E-mails</TabsTrigger>
-                <TabsTrigger value="phones" className="flex-1">Telefones</TabsTrigger>
-                <TabsTrigger value="contacts" className="flex-1">Contatos</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="info" className="pt-4">
-                <InformationTab
-                  form={form}
-                  company={editingCompany}
-                  availableJobPositions={availableJobPositions}
-                  onSave={saveEditedCompany}
-                />
-              </TabsContent>
-              
-              <TabsContent value="emails" className="pt-4">
-                <EmailsTab
-                  company={editingCompany}
-                  newEmail={newEmail}
-                  setNewEmail={setNewEmail}
-                  onAddEmail={handleAddEmail}
-                  onDeleteEmail={handleDeleteCompanyEmail}
-                />
-              </TabsContent>
-              
-              <TabsContent value="phones" className="pt-4">
-                <PhonesTab
-                  company={editingCompany}
-                  newPhone={newPhone}
-                  setNewPhone={setNewPhone}
-                  onAddPhone={handleAddPhone}
-                  onDeletePhone={handleDeleteCompanyPhone}
-                />
-              </TabsContent>
-              
-              <TabsContent value="contacts" className="pt-4">
-                <ContactsTab
-                  company={editingCompany}
-                  newContact={newContact}
-                  setNewContact={setNewContact}
-                  onAddContact={handleAddContact}
-                  onDeleteContact={handleDeleteCompanyContact}
-                />
-              </TabsContent>
-            </Tabs>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CompanyDeleteDialog 
+        companyToDelete={companyToDelete}
+        setCompanyToDelete={setCompanyToDelete}
+        onConfirmDelete={confirmDeleteCompany}
+      />
     </Sidebar>
   );
 }
