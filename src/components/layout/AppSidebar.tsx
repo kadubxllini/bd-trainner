@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useMessages } from "@/context/MessageContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSelectors } from "@/hooks/useSelectors";
 import { 
   Building, 
   Plus, 
@@ -25,6 +26,7 @@ import {
   Clock,
   BriefcaseBusiness,
   Check,
+  UserCog,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
@@ -88,6 +90,7 @@ interface FilterOptions {
   urgency: UrgencyLevel | null;
   inProgressState: string | null;
   hasInProgress: boolean;
+  selector: string | null;
 }
 
 export function AppSidebar() {
@@ -113,6 +116,7 @@ export function AppSidebar() {
     deleteInProgressState,
   } = useMessages();
   
+  const { selectors, addSelector, deleteSelector } = useSelectors();
   const { user, signOut } = useAuth();
   const { setOpenMobile } = useSidebar();
   
@@ -127,7 +131,8 @@ export function AppSidebar() {
     jobPositions: [],
     urgency: null,
     inProgressState: null,
-    hasInProgress: false
+    hasInProgress: false,
+    selector: null
   });
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
@@ -135,8 +140,10 @@ export function AppSidebar() {
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
   const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
+  const [newGlobalSelector, setNewGlobalSelector] = useState('');
   const [showJobPositionsManager, setShowJobPositionsManager] = useState(false);
   const [showDecorrerManager, setShowDecorrerManager] = useState(false);
+  const [showSelectorsManager, setShowSelectorsManager] = useState(false);
   const isMobile = useIsMobile();
 
   const form = useForm({
@@ -144,7 +151,8 @@ export function AppSidebar() {
       name: '',
       jobPositions: [] as string[],
       urgency: 'Média' as UrgencyLevel,
-      inProgress: ''
+      inProgress: '',
+      selector: ''
     }
   });
 
@@ -199,6 +207,12 @@ export function AppSidebar() {
       );
     }
     
+    if (filterOptions.selector) {
+      filtered = filtered.filter(company => 
+        company.selector === filterOptions.selector
+      );
+    }
+    
     setFilteredCompanies(filtered);
   }, [searchQuery, companies, filterOptions]);
 
@@ -207,7 +221,8 @@ export function AppSidebar() {
       filterOptions.jobPositions.length > 0 || 
       filterOptions.urgency !== null ||
       filterOptions.hasInProgress ||
-      filterOptions.inProgressState !== null
+      filterOptions.inProgressState !== null ||
+      filterOptions.selector !== null
     );
   };
 
@@ -216,7 +231,8 @@ export function AppSidebar() {
       jobPositions: [],
       urgency: null,
       inProgressState: null,
-      hasInProgress: false
+      hasInProgress: false,
+      selector: null
     });
   };
 
@@ -262,6 +278,17 @@ export function AppSidebar() {
     }));
   };
 
+  const setSelectorFilter = (selector: string | null, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setFilterOptions(prev => ({
+      ...prev,
+      selector: selector
+    }));
+  };
+
   const toggleHasInProgressFilter = (event?: React.MouseEvent) => {
     if (event) {
       event.stopPropagation();
@@ -287,7 +314,8 @@ export function AppSidebar() {
       name: company.name,
       jobPositions: company.jobPositions || [],
       urgency: company.urgency || 'Média',
-      inProgress: company.inProgress || ''
+      inProgress: company.inProgress || '',
+      selector: company.selector || ''
     });
   };
 
@@ -301,7 +329,8 @@ export function AppSidebar() {
           name: formData.name,
           jobPositions: formData.jobPositions,
           urgency: formData.urgency,
-          inProgress: formData.inProgress
+          inProgress: formData.inProgress,
+          selector: formData.selector
         });
       }
     }
@@ -384,6 +413,19 @@ export function AppSidebar() {
   const handleDeleteJobPosition = (jobPosition: string) => {
     deleteJobPosition(jobPosition);
     toast.success(`Vaga "${jobPosition}" removida`);
+  };
+
+  const handleAddGlobalSelector = () => {
+    if (newGlobalSelector.trim()) {
+      addSelector(newGlobalSelector);
+      setNewGlobalSelector('');
+      toast.success(`Selecionadora "${newGlobalSelector}" adicionada`);
+    }
+  };
+
+  const handleDeleteSelector = (selector: string) => {
+    deleteSelector(selector);
+    toast.success(`Selecionadora "${selector}" removida`);
   };
 
   const getUrgencyColor = (urgency?: UrgencyLevel) => {
@@ -499,6 +541,14 @@ export function AppSidebar() {
                 >
                   <Clock className="h-4 w-4" />
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setShowSelectorsManager(true)} 
+                  className="h-6 px-2"
+                >
+                  <UserCog className="h-4 w-4" />
+                </Button>
                 {user && (
                   <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
                     <LogOut className="h-4 w-4" />
@@ -569,6 +619,18 @@ export function AppSidebar() {
                       >
                         <Clock className="h-3 w-3" />
                         {filterOptions.inProgressState}
+                        <X className="h-3 w-3" />
+                      </Badge>
+                    )}
+                    
+                    {filterOptions.selector && (
+                      <Badge 
+                        variant="secondary" 
+                        className="flex items-center gap-1 bg-purple-100 text-purple-800 text-xs"
+                        onClick={(e) => setSelectorFilter(null, e)}
+                      >
+                        <UserCog className="h-3 w-3" />
+                        {filterOptions.selector}
                         <X className="h-3 w-3" />
                       </Badge>
                     )}
@@ -725,6 +787,53 @@ export function AppSidebar() {
                       </div>
                     </PopoverContent>
                   </Popover>
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="text-xs h-7 flex items-center gap-1 w-full justify-start" 
+                      >
+                        <UserCog className="h-3 w-3" />
+                        Selecionadora
+                        {filterOptions.selector && (
+                          <Badge variant="secondary" className="ml-auto bg-purple-100 text-purple-800">
+                            {filterOptions.selector}
+                          </Badge>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-2" align="start">
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium">Selecione a selecionadora:</p>
+                        <ScrollArea className="h-[200px] pr-3">
+                          <div className="space-y-1">
+                            {selectors.map(selector => (
+                              <Button 
+                                key={selector}
+                                size="sm" 
+                                variant={filterOptions.selector === selector ? "default" : "outline"} 
+                                className="text-xs h-7 flex items-center gap-1 justify-start w-full" 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setSelectorFilter(
+                                    filterOptions.selector === selector ? null : selector
+                                  ); 
+                                }}
+                              >
+                                <UserCog className="h-3 w-3" />
+                                {selector}
+                                {filterOptions.selector === selector && (
+                                  <Check className="ml-auto h-3 w-3" />
+                                )}
+                              </Button>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             )}
@@ -867,6 +976,64 @@ export function AppSidebar() {
           
           <DialogFooter>
             <Button onClick={() => setShowDecorrerManager(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showSelectorsManager}
+        onOpenChange={setShowSelectorsManager}
+      >
+        <DialogContent className="sm:max-w-md bg-background">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Selecionadoras</DialogTitle>
+            <DialogDescription>
+              Adicione ou remova selecionadoras disponíveis para todas as empresas.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Input
+                value={newGlobalSelector}
+                onChange={(e) => setNewGlobalSelector(e.target.value)}
+                placeholder="Nova selecionadora"
+                className="flex-1"
+              />
+              <Button onClick={handleAddGlobalSelector}>Adicionar</Button>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium">Selecionadoras disponíveis</h3>
+              <ScrollArea className="h-[200px] pr-3">
+                {selectors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma selecionadora cadastrada</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectors.map(selector => (
+                      <div key={selector} className="flex justify-between items-center p-2 border rounded-md bg-secondary/20">
+                        <div className="flex items-center gap-2">
+                          <UserCog className="h-4 w-4 text-muted-foreground" />
+                          <span>{selector}</span>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => handleDeleteSelector(selector)} 
+                          className="h-7 w-7 hover:text-destructive"
+                        >
+                          <Trash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowSelectorsManager(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

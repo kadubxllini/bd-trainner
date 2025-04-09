@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { X, AlertCircle, BriefcaseBusiness, Clock } from 'lucide-react';
+import { X, AlertCircle, BriefcaseBusiness, Clock, UserCog } from 'lucide-react';
 import { useMessages } from '@/context/MessageContext';
+import { useSelectors } from '@/hooks/useSelectors';
 
 interface InformationTabProps {
   form: any;
@@ -33,7 +34,9 @@ export function InformationTab({
   const selectedJobPositions = form.watch('jobPositions') || [];
   const selectedInProgress = form.watch('inProgress');
   const selectedUrgency = form.watch('urgency') as UrgencyLevel;
+  const selectedSelector = form.watch('selector');
   const { availableInProgressStates } = useMessages();
+  const { selectors } = useSelectors();
   
   const removeJobPosition = (position: string) => {
     const currentPositions = form.getValues().jobPositions || [];
@@ -191,6 +194,38 @@ export function InformationTab({
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
                           <span>{state}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </ScrollArea>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Selecionadora</h3>
+          
+          <FormField
+            control={form.control}
+            name="selector"
+            render={({ field }) => (
+              <Select 
+                value={field.value || ''} 
+                onValueChange={(value) => form.setValue('selector', value === 'none' ? '' : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a selecionadora" />
+                </SelectTrigger>
+                <SelectContent>
+                  <ScrollArea className="h-[200px]">
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {selectors.map((selector) => (
+                      <SelectItem key={selector} value={selector}>
+                        <div className="flex items-center gap-2">
+                          <UserCog className="h-4 w-4" />
+                          <span>{selector}</span>
                         </div>
                       </SelectItem>
                     ))}
