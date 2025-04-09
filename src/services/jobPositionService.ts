@@ -20,11 +20,20 @@ export const fetchJobPositions = async () => {
 };
 
 export const addJobPosition = async (title: string) => {
-  const { error } = await supabase
+  // Check if the position already exists
+  const { data: existingPositions } = await supabase
     .from('job_positions')
-    .insert({ title });
+    .select('title')
+    .eq('title', title);
   
-  if (error) throw error;
+  // Only add if not exists
+  if (!existingPositions || existingPositions.length === 0) {
+    const { error } = await supabase
+      .from('job_positions')
+      .insert({ title });
+    
+    if (error) throw error;
+  }
   
   return fetchJobPositions();
 };
@@ -37,5 +46,11 @@ export const deleteJobPosition = async (title: string) => {
   
   if (error) throw error;
   
+  return fetchJobPositions();
+};
+
+// Initialize the system with the "Selecionadora" job position
+export const initializeDefaultJobPositions = async () => {
+  await addJobPosition("Selecionadora");
   return fetchJobPositions();
 };

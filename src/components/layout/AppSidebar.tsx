@@ -132,7 +132,6 @@ export function AppSidebar() {
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [showSearchInput, setShowSearchInput] = useState(false);
-  const [customJobPosition, setCustomJobPosition] = useState('');
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [newGlobalJobPosition, setNewGlobalJobPosition] = useState('');
   const [newGlobalInProgressState, setNewGlobalInProgressState] = useState('');
@@ -366,23 +365,11 @@ export function AppSidebar() {
   };
 
   const handleJobPositionChange = (value: string) => {
-    if (value === 'custom') {
-      setCustomJobPosition('');
-    } else if (value !== 'none') {
+    if (value !== 'none') {
       const currentPositions = form.getValues().jobPositions || [];
       if (!currentPositions.includes(value)) {
         form.setValue('jobPositions', [...currentPositions, value]);
       }
-    }
-  };
-
-  const applyCustomJobPosition = () => {
-    if (customJobPosition.trim()) {
-      const currentPositions = form.getValues().jobPositions || [];
-      if (!currentPositions.includes(customJobPosition)) {
-        form.setValue('jobPositions', [...currentPositions, customJobPosition]);
-      }
-      setCustomJobPosition('');
     }
   };
 
@@ -924,10 +911,6 @@ export function AppSidebar() {
                   form={form}
                   company={editingCompany}
                   availableJobPositions={availableJobPositions}
-                  customJobPosition={customJobPosition}
-                  setCustomJobPosition={setCustomJobPosition}
-                  handleJobPositionChange={handleJobPositionChange}
-                  applyCustomJobPosition={applyCustomJobPosition}
                   onSave={saveEditedCompany}
                 />
               </TabsContent>

@@ -56,6 +56,20 @@ export const useJobPositions = () => {
     await deleteJobPositionMutation.mutateAsync(title);
   };
 
+  // Function to ensure the "Selecionadora" job position exists
+  const ensureDefaultJobPositions = async () => {
+    if (!jobPositions.includes("Selecionadora")) {
+      await addJobPosition("Selecionadora");
+    }
+  };
+
+  // Call this when the hook is initialized
+  useEffect(() => {
+    if (user && jobPositions.length > 0) {
+      ensureDefaultJobPositions();
+    }
+  }, [user, jobPositions.length]);
+
   return {
     jobPositions,
     addJobPosition,

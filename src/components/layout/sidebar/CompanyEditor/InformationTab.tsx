@@ -21,10 +21,6 @@ interface InformationTabProps {
   form: any;
   company: Company;
   availableJobPositions: string[];
-  customJobPosition: string;
-  setCustomJobPosition: (value: string) => void;
-  handleJobPositionChange: (value: string) => void;
-  applyCustomJobPosition: () => void;
   onSave: () => void;
 }
 
@@ -32,10 +28,6 @@ export function InformationTab({
   form,
   company,
   availableJobPositions,
-  customJobPosition,
-  setCustomJobPosition,
-  handleJobPositionChange,
-  applyCustomJobPosition,
   onSave
 }: InformationTabProps) {
   const selectedJobPositions = form.watch('jobPositions') || [];
@@ -46,6 +38,15 @@ export function InformationTab({
   const removeJobPosition = (position: string) => {
     const currentPositions = form.getValues().jobPositions || [];
     form.setValue('jobPositions', currentPositions.filter(p => p !== position));
+  };
+  
+  const handleJobPositionChange = (value: string) => {
+    if (value !== 'none') {
+      const currentPositions = form.getValues().jobPositions || [];
+      if (!currentPositions.includes(value)) {
+        form.setValue('jobPositions', [...currentPositions, value]);
+      }
+    }
   };
   
   const getUrgencyColor = (urgency: UrgencyLevel) => {
@@ -114,7 +115,6 @@ export function InformationTab({
                     {availableJobPositions.map(job => (
                       <SelectItem key={job} value={job}>{job}</SelectItem>
                     ))}
-                    <SelectItem value="custom">Personalizada...</SelectItem>
                   </ScrollArea>
                 </SelectContent>
               </Select>
@@ -128,23 +128,6 @@ export function InformationTab({
               Salvar
             </Button>
           </div>
-          
-          {customJobPosition !== undefined && (
-            <div className="flex gap-2">
-              <Input
-                placeholder="Digite a vaga personalizada"
-                value={customJobPosition}
-                onChange={(e) => setCustomJobPosition(e.target.value)}
-              />
-              <Button 
-                type="button" 
-                size="sm" 
-                onClick={applyCustomJobPosition}
-              >
-                Adicionar
-              </Button>
-            </div>
-          )}
         </div>
         
         <FormField
