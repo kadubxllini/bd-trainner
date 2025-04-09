@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import { Company, Message } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
@@ -7,37 +7,7 @@ import { useCompanies } from '@/hooks/useCompanies';
 import { useMessagesData } from '@/hooks/useMessages'; // Renamed import to avoid conflict
 import { useJobPositions } from '@/hooks/useJobPositions';
 import { useInProgressStates } from '@/hooks/useInProgressStates';
-
-// Import UrgencyLevel type
-import { UrgencyLevel } from '@/types';
-
-interface MessageContextProps {
-  companies: Company[];
-  activeCompany: Company | null;
-  messages: Message[];
-  addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
-  deleteMessage: (id: string) => Promise<void>;
-  updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
-  createCompany: (name: string) => Promise<void>;
-  selectCompany: (id: string) => void;
-  updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
-  deleteCompany: (id: string) => Promise<void>;
-  addCompanyEmail: (companyId: string, email: string, jobPosition?: string, preference?: UrgencyLevel) => Promise<void>;
-  deleteCompanyEmail: (emailId: string) => Promise<void>;
-  addCompanyPhone: (companyId: string, phone: string) => Promise<void>;
-  deleteCompanyPhone: (phoneId: string) => Promise<void>;
-  addCompanyContact: (companyId: string, name: string) => Promise<void>;
-  deleteCompanyContact: (contactId: string) => Promise<void>;
-  addJobPosition: (title: string) => Promise<void>;
-  deleteJobPosition: (title: string) => Promise<void>;
-  availableJobPositions: string[];
-  availableInProgressStates: string[];
-  addInProgressState: (state: string) => Promise<void>;
-  deleteInProgressState: (state: string) => Promise<void>;
-  addCompanyInProgressState: (companyId: string, state: string) => Promise<void>;
-  deleteCompanyInProgressState: (companyId: string, stateId: string) => Promise<void>;
-  isLoading: boolean;
-}
+import { MessageContextProps } from './types/messageContextTypes';
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
 
@@ -125,10 +95,8 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
-export const useMessages = () => {
-  const context = useContext(MessageContext);
-  if (!context) {
-    throw new Error('useMessages must be used within a MessageProvider');
-  }
-  return context;
-};
+// Export the context itself in case it's needed directly
+export { MessageContext };
+
+// Re-export the useMessages hook from the new file
+export { useMessages } from './hooks/useMessageContext';
