@@ -56,20 +56,6 @@ export const useSelectors = () => {
     await deleteSelectorMutation.mutateAsync(name);
   };
 
-  // Function to ensure the "Selecionadora" selector exists
-  const ensureDefaultSelectors = async () => {
-    if (!selectors.includes("Selecionadora")) {
-      await addSelector("Selecionadora");
-    }
-  };
-
-  // Call this when the hook is initialized
-  useEffect(() => {
-    if (user && selectors.length > 0) {
-      ensureDefaultSelectors();
-    }
-  }, [user, selectors.length]);
-
   return {
     selectors,
     addSelector,

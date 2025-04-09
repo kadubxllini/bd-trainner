@@ -64,8 +64,4 @@ export const deleteSelector = async (name: string) => {
   }
 };
 
-// Initialize the system with the default selector
-export const initializeDefaultSelectors = async () => {
-  await addSelector("Selecionadora");
-  return fetchSelectors();
-};
+// Removemos a função initializeDefaultSelectors que adicionava a "Selecionadora" automaticamente

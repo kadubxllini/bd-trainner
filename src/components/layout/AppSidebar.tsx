@@ -513,45 +513,45 @@ export function AppSidebar() {
           <div className="flex justify-center p-4">Carregando...</div>
         ) : (
           <SidebarGroup>
-            <div className="px-4 py-2 flex justify-between items-center">
+            <div className="px-3 py-2 flex justify-between items-center">
               <h2 className="text-xs font-medium text-muted-foreground">Empresas</h2>
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" onClick={toggleFilterMenu} className="h-6 px-2 relative">
-                  <Filter className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={toggleFilterMenu} className="h-6 px-1.5 relative">
+                  <Filter className="h-3.5 w-3.5" />
                   {isFilterActive() && (
                     <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
                   )}
                 </Button>
-                <Button variant="ghost" size="sm" onClick={toggleSearch} className="h-6 px-2">
-                  <Search className="h-4 w-4" />
+                <Button variant="ghost" size="sm" onClick={toggleSearch} className="h-6 px-1.5">
+                  <Search className="h-3.5 w-3.5" />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setShowJobPositionsManager(true)} 
-                  className="h-6 px-2"
+                  className="h-6 px-1.5"
                 >
-                  <BriefcaseBusiness className="h-4 w-4" />
+                  <BriefcaseBusiness className="h-3.5 w-3.5" />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setShowDecorrerManager(true)} 
-                  className="h-6 px-2"
+                  className="h-6 px-1.5"
                 >
-                  <Clock className="h-4 w-4" />
+                  <Clock className="h-3.5 w-3.5" />
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={() => setShowSelectorsManager(true)} 
-                  className="h-6 px-2"
+                  className="h-6 px-1.5"
                 >
-                  <UserCog className="h-4 w-4" />
+                  <UserCog className="h-3.5 w-3.5" />
                 </Button>
                 {user && (
-                  <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-2">
-                    <LogOut className="h-4 w-4" />
+                  <Button variant="ghost" size="sm" onClick={signOut} className="h-6 px-1.5">
+                    <LogOut className="h-3.5 w-3.5" />
                   </Button>
                 )}
               </div>
