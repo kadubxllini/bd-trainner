@@ -46,7 +46,7 @@ export const fetchCompanyJobPositions = async (companyId: string) => {
 export const fetchCompanyDetails = async (companyId: string) => {
   const { data: companyDetailsData } = await supabase
     .from('companies')
-    .select('urgency, in_progress')
+    .select('urgency, in_progress, selector')
     .eq('id', companyId)
     .single();
     

@@ -26,6 +26,7 @@ export const useCompanies = (userId?: string) => {
           const companyDetailsData = await companyService.fetchCompanyDetails(company.id);
           const urgency = companyDetailsData?.urgency as UrgencyLevel | undefined;
           const inProgress = companyDetailsData?.in_progress || null;
+          const selector = companyDetailsData?.selector || null;
           
           const emailsData = await companyService.fetchCompanyEmails(company.id);
           const phonesData = await companyService.fetchCompanyPhones(company.id);
@@ -38,6 +39,7 @@ export const useCompanies = (userId?: string) => {
             jobPositions: jobPositions,
             urgency: urgency as UrgencyLevel,
             inProgress: inProgress,
+            selector: selector,
             emails: emailsData?.map(email => ({
               id: email.id,
               email: email.email,
