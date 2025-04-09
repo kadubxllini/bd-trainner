@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -88,6 +87,7 @@ export const useCompanies = (userId?: string) => {
       if (data.name) updateData.name = data.name;
       if (data.urgency !== undefined) updateData.urgency = data.urgency;
       if (data.inProgress !== undefined) updateData.in_progress = data.inProgress;
+      if (data.selector !== undefined) updateData.selector = data.selector;
       
       await companyService.updateCompanyDetails(id, updateData);
       

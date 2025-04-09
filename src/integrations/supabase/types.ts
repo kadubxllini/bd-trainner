@@ -19,6 +19,7 @@ export type Database = {
           job_position: string | null
           name: string
           phone: string | null
+          selector: string | null
           urgency: string | null
           user_id: string
         }
@@ -31,6 +32,7 @@ export type Database = {
           job_position?: string | null
           name: string
           phone?: string | null
+          selector?: string | null
           urgency?: string | null
           user_id: string
         }
@@ -43,6 +45,7 @@ export type Database = {
           job_position?: string | null
           name?: string
           phone?: string | null
+          selector?: string | null
           urgency?: string | null
           user_id?: string
         }
@@ -294,6 +297,24 @@ export type Database = {
           created_at?: string
           id?: string
           username?: string | null
+        }
+        Relationships: []
+      }
+      selectors: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }

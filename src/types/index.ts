@@ -16,6 +16,7 @@ export interface Company {
   jobPositions: string[]; // Changed from jobPosition to jobPositions array
   urgency: UrgencyLevel;
   inProgress: string | null;
+  selector: string | null;
   emails: CompanyEmail[];
   phones: CompanyPhone[];
   contacts: CompanyContact[];
