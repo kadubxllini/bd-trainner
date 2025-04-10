@@ -43,7 +43,7 @@ const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
           className="h-8 gap-1 bg-secondary/50 border-white/10"
         >
           <CalendarDays className="h-4 w-4" />
-          <span className="hidden sm:inline">{format(<DisplayD></DisplayDate, "dd/MM/yyyy", { locale: ptBR })}</span>
+          <span className="hidden sm:inline">{format(Displaydate, "dd/MM/yyyy", { locale: ptBR })}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
