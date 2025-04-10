@@ -128,6 +128,7 @@ const MessagesView = () => {
   };
 
   const startEditingMessage = (message: Message) => {
+    console.log("Starting to edit message:", message);
     setEditingMessage(message);
     setEditedContent(message.content);
   };
@@ -136,9 +137,11 @@ const MessagesView = () => {
     if (editingMessage && editedContent.trim()) {
       try {
         await updateMessage(editingMessage.id, { content: editedContent });
+        toast.success("Mensagem atualizada com sucesso");
         closeEditDialog();
       } catch (error) {
         console.error("Error updating message:", error);
+        toast.error("Erro ao atualizar mensagem");
       }
     }
   };
@@ -222,17 +225,6 @@ const MessagesView = () => {
         new Date(a).getTime() - new Date(b).getTime()
       )
     : [];
-
-  const handleEditMessage = async () => {
-    if (editingMessage && editedContent.trim()) {
-      try {
-        await updateMessage(editingMessage.id, { content: editedContent });
-        closeEditDialog();
-      } catch (error) {
-        console.error("Error updating message:", error);
-      }
-    }
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -412,6 +404,7 @@ const MessagesView = () => {
                 onChange={(e) => setEditedContent(e.target.value)}
                 placeholder="Conteúdo da mensagem"
                 className="w-full"
+                autoFocus
               />
             </div>
             <DialogFooter>
