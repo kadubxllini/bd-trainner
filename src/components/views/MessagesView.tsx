@@ -223,6 +223,17 @@ const MessagesView = () => {
       )
     : [];
 
+  const handleEditMessage = async () => {
+    if (editingMessage && editedContent.trim()) {
+      try {
+        await updateMessage(editingMessage.id, { content: editedContent });
+        closeEditDialog();
+      } catch (error) {
+        console.error("Error updating message:", error);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex justify-between items-center mb-4">

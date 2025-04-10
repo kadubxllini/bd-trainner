@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Calendar } from "@/components/ui/calendar";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, X } from "lucide-react";
@@ -31,9 +31,6 @@ const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
     }
   };
 
-  // Add a day for display purposes only
-  const displayDate = addDays(date, 1);
-
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -43,7 +40,7 @@ const DatePicker = ({ date, onDateChange }: DatePickerProps) => {
           className="h-8 gap-1 bg-secondary/50 border-white/10"
         >
           <CalendarDays className="h-4 w-4" />
-          <span className="hidden sm:inline">{format(displayDate, "dd/MM/yyyy", { locale: ptBR })}</span>
+          <span className="hidden sm:inline">{format(date, "dd/MM/yyyy", { locale: ptBR })}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
