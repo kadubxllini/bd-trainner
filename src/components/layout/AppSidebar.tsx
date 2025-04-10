@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -7,14 +6,22 @@ import {
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useMessages } from "@/context/MessageContext";
+import { useMessages } from "@/context/hooks/useMessageContext";
 import { useAuth } from "@/context/AuthContext";
 import { useSelectors } from "@/hooks/useSelectors";
-import { Dialog } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Company } from "@/types";
+import { Company, UrgencyLevel } from "@/types";
 import { CompanyList } from "./sidebar/CompanyList";
 import { NewCompanyForm } from "./sidebar/NewCompanyForm";
 import { JobPositionsManager } from "./sidebar/managers/JobPositionsManager";
@@ -26,7 +33,7 @@ import { DecorrerTab } from "./sidebar/CompanyEditor/DecorrerTab";
 
 interface FilterOptions {
   jobPositions: string[];
-  urgency: string | null;
+  urgency: UrgencyLevel | null;
   inProgressState: string | null;
   hasInProgress: boolean;
   selector: string | null;
@@ -238,6 +245,10 @@ export function AppSidebar() {
     }
   };
 
+  const handleEditCompany = (company: Company) => {
+    console.log("Edit company:", company);
+  };
+
   const toggleSearch = () => {
     setShowSearchInput(!showSearchInput);
     if (showSearchInput) {
@@ -345,6 +356,7 @@ export function AppSidebar() {
               companies={filteredCompanies}
               activeCompany={activeCompany}
               onCompanySelect={handleCompanySelect}
+              onEditCompany={handleEditCompany}
               onDeleteCompany={handleDeleteCompany}
             />
 
