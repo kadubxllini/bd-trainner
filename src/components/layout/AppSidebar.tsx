@@ -244,13 +244,14 @@ export function AppSidebar() {
       setOpenMobile(false);
     }
   };
+
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+
   const handleEditCompany = (company: Company) => {
     setSelectedCompany(company);
     setShowEditModal(true);
-  };
-    console.log("Edit company:", company);
-   };
+  };  
 
   const toggleSearch = () => {
     setShowSearchInput(!showSearchInput);
@@ -421,17 +422,16 @@ export function AppSidebar() {
         companyToDelete={companyToDelete}
         setCompanyToDelete={setCompanyToDelete}
         onConfirmDelete={confirmDeleteCompany}
-
-      {showEditModal && selectedCompany && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h2>Editando: {selectedCompany.name}</h2>
-            <button onClick={() => setShowEditModal(false)}>Fechar</button>
-          </div>
-        </div>
-      )}
-
       />
+      {showEditModal && selectedCompany && (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h2>Editando: {selectedCompany.name}</h2>
+          {/* Aqui você pode colocar o formulário depois */}
+          <button onClick={() => setShowEditModal(false)}>Fechar</button>
+        </div>
+      </div>
+    )}
     </Sidebar>
   );
 }
