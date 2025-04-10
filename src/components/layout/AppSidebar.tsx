@@ -245,9 +245,12 @@ export function AppSidebar() {
     }
   };
 
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
   const handleEditCompany = (company: Company) => {
-    console.log("Edit company:", company);
-  };
+    setSelectedCompany(company);
+    setIsEditModalOpen(true);
 
   const toggleSearch = () => {
     setShowSearchInput(!showSearchInput);
