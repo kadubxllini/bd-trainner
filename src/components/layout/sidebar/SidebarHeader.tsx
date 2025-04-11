@@ -14,7 +14,14 @@ export const SidebarHeader = ({ isMobile, children }: SidebarHeaderProps) => {
 
   return (
     <div className="py-6 flex items-center justify-between">
-      <h1 className="text-lg font-semibold text-center flex-1">{children || "Mensageiro"}</h1>
+      <div className="flex items-center gap-2 flex-1 justify-center">
+        <img 
+          src="/lovable-uploads/20d89d16-239d-4748-8775-b3a768f36471.png" 
+          alt="Trainner RH Logo" 
+          className="h-9 w-auto"
+        />
+        <h1 className="text-lg font-semibold text-center">{children || "Mensageiro"}</h1>
+      </div>
       {isMobile && (
         <Button 
           variant="ghost" 

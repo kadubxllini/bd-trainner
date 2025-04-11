@@ -33,10 +33,10 @@ const CompanyInfo = () => {
     <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4 text-sm text-muted-foreground">
       {activeCompany.contacts.length > 0 && (
         <div className="flex flex-col">
-          <span className="font-medium mb-1">Contatos:</span>
+          <span className="font-medium mb-1 text-yellow">Contatos:</span>
           {activeCompany.contacts.map(contact => (
             <div key={contact.id} className="flex items-center gap-1 ml-2 mb-1">
-              <User className="h-4 w-4" />
+              <User className="h-4 w-4 text-yellow" />
               <span>{contact.name}</span>
             </div>
           ))}
@@ -45,10 +45,10 @@ const CompanyInfo = () => {
       
       {activeCompany.emails.length > 0 && (
         <div className="flex flex-col">
-          <span className="font-medium mb-1">E-mails:</span>
+          <span className="font-medium mb-1 text-yellow">E-mails:</span>
           {activeCompany.emails.map(item => (
             <div key={item.id} className="flex items-center gap-1 ml-2 mb-1">
-              <Mail className="h-4 w-4" />
+              <Mail className="h-4 w-4 text-yellow" />
               <span>{item.email}</span>
             </div>
           ))}
@@ -57,10 +57,10 @@ const CompanyInfo = () => {
       
       {activeCompany.phones.length > 0 && (
         <div className="flex flex-col">
-          <span className="font-medium mb-1">Telefones:</span>
+          <span className="font-medium mb-1 text-yellow">Telefones:</span>
           {activeCompany.phones.map(item => (
             <div key={item.id} className="flex items-center gap-1 ml-2 mb-1">
-              <Phone className="h-4 w-4" />
+              <Phone className="h-4 w-4 text-yellow" />
               <span>{item.phone}</span>
             </div>
           ))}
@@ -77,7 +77,7 @@ const MainLayout = () => {
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden bg-background transition-all duration-300 ease-in-out">
+        <main className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden bg-navy transition-all duration-300 ease-in-out">
           <MobileMenuToggle />
           <CompanyInfo />
           <MessagesView />

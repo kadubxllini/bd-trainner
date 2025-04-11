@@ -62,7 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                yellow: {
+                    DEFAULT: 'hsl(45, 100%, 60%)'
+                },
+                navy: {
+                    DEFAULT: 'hsl(230, 64%, 8%)',
+                    light: 'hsl(235, 46%, 15%)'
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

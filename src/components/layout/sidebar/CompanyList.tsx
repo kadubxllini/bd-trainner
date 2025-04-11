@@ -61,7 +61,7 @@ export function CompanyList({
     <SidebarMenu className="max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin">
       {companies.map((company) => (
         <ContextMenu key={company.id}>
-          <ContextMenuTrigger>
+          <ContextMenuTrigger asChild>
             <SidebarMenuItem>
               <SidebarMenuButton 
                 onClick={() => handleCompanySelect(company.id)}

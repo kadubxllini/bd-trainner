@@ -10,7 +10,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Navigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const authSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -24,6 +25,7 @@ const Auth = () => {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
 
   const form = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
@@ -38,11 +40,25 @@ const Auth = () => {
     try {
       if (authMode === 'signin') {
         await signIn(values.email, values.password);
+        toast({
+          title: "Login efetuado com sucesso",
+          description: "Bem-vindo(a) de volta!",
+        });
       } else {
         await signUp(values.email, values.password);
+        toast({
+          title: "Conta criada com sucesso",
+          description: "Por favor, faça login para continuar.",
+        });
         setAuthMode('signin');
         form.reset();
       }
+    } catch (error) {
+      toast({
+        title: authMode === 'signin' ? "Erro ao fazer login" : "Erro ao criar conta",
+        description: "Verifique suas credenciais e tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -58,8 +74,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md glass-morphism">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 bg-gradient-to-b from-background to-secondary/20">
+      <Card className="w-full max-w-md shadow-lg border-opacity-50">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Mensageiro</CardTitle>
           <CardDescription className="text-center">
@@ -122,7 +138,14 @@ const Auth = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Entrando...' : 'Entrar'}
+                    {isSubmitting ? (
+                      'Entrando...'
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <LogIn className="h-4 w-4" />
+                        Entrar
+                      </span>
+                    )}
                   </Button>
                 </form>
               </Form>
@@ -177,15 +200,22 @@ const Auth = () => {
                     )}
                   />
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+                    {isSubmitting ? (
+                      'Criando conta...'
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Criar conta
+                      </span>
+                    )}
                   </Button>
                 </form>
               </Form>
             </TabsContent>
           </Tabs>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">
+        <CardFooter className="flex flex-col justify-center space-y-2">
+          <p className="text-sm text-muted-foreground text-center">
             © 2024 Mensageiro. Todos os direitos reservados.
           </p>
         </CardFooter>

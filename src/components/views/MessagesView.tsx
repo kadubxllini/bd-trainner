@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useMessages } from '@/context/MessageContext';
 import { Send, X, Pencil, Trash, Upload, FileText, Calendar, CalendarDays } from 'lucide-react';
@@ -10,13 +11,6 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   Popover,
   PopoverContent,
@@ -34,26 +28,28 @@ import { pt } from 'date-fns/locale';
 
 const MessagesView = () => {
   const { user } = useAuth();
-  const { activeCompany, messages = [], addMessage, deleteMessage, updateMessage, isLoading } = useMessages();
+  const { activeCompany, messages = [], addMessage, deleteMessage, isLoading } = useMessages();
   const [newMessage, setNewMessage] = useState('');
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null);
-  const [editedContent, setEditedContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [showAllMessages, setShowAllMessages] = useState(true);
   const [messageDate, setMessageDate] = useState<Date>(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  
+  // References
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
 
+  // Scroll to the end of messages when new messages are added
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, selectedDate, showAllMessages]);
 
+  // Function to send message
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !selectedFile) || !activeCompany || !user) return;
     
@@ -109,6 +105,7 @@ const MessagesView = () => {
     }
   };
 
+  // Keyboard events
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -116,8 +113,11 @@ const MessagesView = () => {
     }
   };
 
+  // File handling
   const handleFileButtonClick = () => {
-    fileInputRef.current?.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,34 +127,34 @@ const MessagesView = () => {
     }
   };
 
-  const startEditingMessage = (message: Message) => {
-    console.log("Starting to edit message:", message);
-    setEditingMessage(message);
-    setEditedContent(message.content);
-  };
-
-  const saveEditedMessage = async () => {
-    if (editingMessage && editedContent.trim()) {
-      try {
-        await updateMessage(editingMessage.id, { content: editedContent });
-        toast.success("Mensagem atualizada com sucesso");
-        closeEditDialog();
-      } catch (error) {
-        console.error("Error updating message:", error);
-        toast.error("Erro ao atualizar mensagem");
-      }
+  // Handle editing message - now calls the global edit function
+  const handleEditMessage = (message: Message) => {
+    if (!message || !message.id) {
+      toast.error("Mensagem inválida");
+      return;
+    }
+    
+    // Use the global edit function that's exposed from AppSidebar
+    if (window.editMessage) {
+      window.editMessage(message);
+    } else {
+      toast.error("Função de edição não disponível");
+      console.error("Edit function not available");
     }
   };
 
-  const closeEditDialog = () => {
-    setEditingMessage(null);
-    setEditedContent('');
-  };
-
+  // Function to delete message
   const handleDeleteMessage = async (id: string) => {
-    await deleteMessage(id);
+    try {
+      await deleteMessage(id);
+      toast.success("Mensagem excluída com sucesso");
+    } catch (error) {
+      console.error("Erro ao excluir mensagem:", error);
+      toast.error("Erro ao excluir mensagem");
+    }
   };
   
+  // Functions for the calendar
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     setShowAllMessages(false);
@@ -169,15 +169,7 @@ const MessagesView = () => {
     setShowCalendar(!showCalendar);
   };
   
-  const formatMessageDate = (timestamp: number) => {
-    const date = addDays(new Date(timestamp), 1);
-    return format(date, "PPP", { locale: pt });
-  };
-  
-  const formatMessageTime = (timestamp: number) => {
-    return format(new Date(timestamp), "HH:mm", { locale: pt });
-  };
-  
+  // Filtering and grouping messages
   const filteredMessages = (messages || []).filter(message => {
     if (showAllMessages) return true;
     
@@ -297,7 +289,7 @@ const MessagesView = () => {
                           key={message.id} 
                           message={message} 
                           onDelete={handleDeleteMessage}
-                          onEdit={startEditingMessage}
+                          onEdit={handleEditMessage}
                         />
                       ))}
                     </div>
@@ -317,7 +309,7 @@ const MessagesView = () => {
                   key={message.id} 
                   message={message} 
                   onDelete={handleDeleteMessage}
-                  onEdit={startEditingMessage}
+                  onEdit={handleEditMessage}
                 />
               ))
             )}
@@ -387,41 +379,12 @@ const MessagesView = () => {
             </div>
           )}
         </div>
-
-        <Dialog 
-          open={!!editingMessage} 
-          onOpenChange={(open) => {
-            if (!open) closeEditDialog();
-          }}
-        >
-          <DialogContent className="sm:max-w-md bg-background">
-            <DialogHeader>
-              <DialogTitle>Editar mensagem</DialogTitle>
-            </DialogHeader>
-            <div className="py-4">
-              <Input
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                placeholder="Conteúdo da mensagem"
-                className="w-full"
-                autoFocus
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="secondary" onClick={closeEditDialog}>
-                Cancelar
-              </Button>
-              <Button onClick={saveEditedMessage}>
-                Salvar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
 };
 
+// Message item component
 interface MessageItemProps {
   message: Message;
   onDelete: (id: string) => void;
@@ -453,14 +416,24 @@ const MessageItem: React.FC<MessageItemProps> = ({ message, onDelete, onEdit }) 
               {format(new Date(message.timestamp), "HH:mm", { locale: pt })}
             </div>
           </div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="absolute top-1 right-1 h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => onDelete(message.id)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-muted-foreground hover:text-primary hover:bg-transparent"
+              onClick={() => onEdit(message)}
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-transparent"
+              onClick={() => onDelete(message.id)}
+            >
+              <Trash className="h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </ContextMenuTrigger>
       
