@@ -1,10 +1,11 @@
+
 import { Company, Message, UrgencyLevel, Folder } from '@/types';
 
 export interface MessageContextProps {
   companies: Company[];
   activeCompany: Company | null;
   messages: Message[];
-  addMessage: (content: string) => Promise<void>;
+  addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
   updateMessage: (id: string, updates: Partial<Message>) => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
   createCompany: (name: string) => Promise<void>;
