@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Company, Message, UrgencyLevel } from "@/types";
+import { Company, Message, UrgencyLevel, Folder } from "@/types";
 import { CompanyList } from "./sidebar/CompanyList";
 import { NewCompanyForm } from "./sidebar/NewCompanyForm";
 import { JobPositionsManager } from "./sidebar/managers/JobPositionsManager";
@@ -17,6 +17,9 @@ import { SidebarHeader } from "./sidebar/SidebarHeader";
 import { SidebarToolbar } from "./sidebar/SidebarToolbar";
 import { CompanyDeleteDialog } from "./sidebar/CompanyDeleteDialog";
 import { CompanyEditDialog } from "./sidebar/CompanyEditor/CompanyEditDialog";
+import { FolderList } from "./sidebar/FolderList";
+import { FolderEditDialog } from "./sidebar/FolderEditDialog";
+import { FolderDeleteDialog } from "./sidebar/FolderDeleteDialog";
 interface FilterOptions {
   jobPositions: string[];
   urgency: UrgencyLevel | null;
@@ -95,7 +98,14 @@ export function AppSidebar() {
     addInProgressState,
     deleteInProgressState,
     messages,
-    updateMessage
+    updateMessage,
+    folders,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    moveCompanyToFolder,
+    toggleFolderExpanded,
+    isFolderExpanded
   } = useMessages();
   const {
     selectors,
@@ -129,6 +139,9 @@ export function AppSidebar() {
   const [showSelectorsManager, setShowSelectorsManager] = useState(false);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [companyEditDialogOpen, setCompanyEditDialogOpen] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [folderEditDialogOpen, setFolderEditDialogOpen] = useState(false);
+  const [folderToDelete, setFolderToDelete] = useState<Folder | null>(null);
   const isMobile = useIsMobile();
   const openEditDialog = (message: Message) => {
     console.log("Opening edit dialog for message:", message);
@@ -342,6 +355,33 @@ export function AppSidebar() {
       toast.error('Erro ao remover estado');
     }
   };
+  const handleCreateFolder = async (name: string, color: string) => {
+    try {
+      await createFolder(name, color);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      toast.error('Erro ao criar pasta');
+    }
+  };
+  const handleDeleteFolder = async (id: string) => {
+    try {
+      await deleteFolder(id);
+      toast.success('Pasta removida com sucesso');
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      toast.error('Erro ao remover pasta');
+    }
+  };
+  const handleEditFolder = (folder: Folder) => {
+    setEditingFolder(folder);
+    setFolderEditDialogOpen(true);
+  };
+
+  const closeFolderEditDialog = () => {
+    setFolderEditDialogOpen(false);
+    setEditingFolder(null);
+  };
+
   return <Sidebar>
       <SidebarHeader isMobile={isMobile} />
       
@@ -349,7 +389,20 @@ export function AppSidebar() {
         {isLoading ? <div className="flex justify-center p-4">Carregando...</div> : <SidebarGroup>
             <SidebarToolbar filterOptions={filterOptions} isFilterActive={isFilterActive} clearAllFilters={clearAllFilters} toggleJobPositionFilter={toggleJobPositionFilter} toggleUrgencyFilter={toggleUrgencyFilter} setInProgressStateFilter={setInProgressStateFilter} setSelectorFilter={setSelectorFilter} toggleHasInProgressFilter={toggleHasInProgressFilter} availableJobPositions={availableJobPositions} availableInProgressStates={availableInProgressStates} selectors={selectors} showFilterMenu={showFilterMenu} toggleFilterMenu={toggleFilterMenu} showSearchInput={showSearchInput} toggleSearch={toggleSearch} searchQuery={searchQuery} setSearchQuery={setSearchQuery} setShowJobPositionsManager={setShowJobPositionsManager} setShowDecorrerManager={setShowDecorrerManager} setShowSelectorsManager={setShowSelectorsManager} user={user} signOut={signOut} />
 
-            <CompanyList companies={filteredCompanies} activeCompany={activeCompany} onCompanySelect={handleCompanySelect} onEditCompany={handleEditCompany} onDeleteCompany={handleDeleteCompany} />
+            <FolderList 
+              folders={folders}
+              companies={filteredCompanies}
+              activeCompany={activeCompany}
+              onCompanySelect={handleCompanySelect}
+              onEditCompany={handleEditCompany}
+              onDeleteCompany={handleDeleteCompany}
+              onCreateFolder={handleCreateFolder}
+              onEditFolder={handleEditFolder}
+              onDeleteFolder={(folder) => setFolderToDelete(folder)}
+              onMoveCompanyToFolder={moveCompanyToFolder}
+              isFolderExpanded={isFolderExpanded}
+              toggleFolderExpanded={toggleFolderExpanded}
+            />
 
             <NewCompanyForm onCreateCompany={handleCreateCompany} />
           </SidebarGroup>}
@@ -413,5 +466,18 @@ export function AppSidebar() {
       <CompanyDeleteDialog companyToDelete={companyToDelete} setCompanyToDelete={setCompanyToDelete} onConfirmDelete={confirmDeleteCompany} />
       
       <CompanyEditDialog company={editingCompany} isOpen={companyEditDialogOpen} onClose={closeCompanyEditDialog} />
+      
+      <FolderEditDialog 
+        folder={editingFolder}
+        isOpen={folderEditDialogOpen}
+        onClose={closeFolderEditDialog}
+        onUpdate={updateFolder}
+      />
+      
+      <FolderDeleteDialog 
+        folderToDelete={folderToDelete}
+        setFolderToDelete={setFolderToDelete}
+        onConfirmDelete={handleDeleteFolder}
+      />
     </Sidebar>;
 }

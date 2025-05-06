@@ -1,11 +1,10 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company, UrgencyLevel, JobPositionResponse, CompanyJobPositionsResult } from '@/types';
 
 export const fetchCompanies = async (userId: string) => {
   const { data: companiesData, error: companiesError } = await supabase
     .from('companies')
-    .select('*')
+    .select('*, folders(*)')
     .order('created_at', { ascending: false });
   
   if (companiesError) {
@@ -109,10 +108,14 @@ export const fetchCompanyInProgressStates = async (companyId: string) => {
   return inProgressStatesData;
 };
 
-export const createCompany = async (name: string, userId: string) => {
+export const createCompany = async (name: string, userId: string, folderId: string | null = null) => {
   const { data, error } = await supabase
     .from('companies')
-    .insert({ name, user_id: userId })
+    .insert({ 
+      name, 
+      user_id: userId,
+      folder_id: folderId 
+    })
     .select()
     .single();
   

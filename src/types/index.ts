@@ -22,6 +22,7 @@ export interface Company {
   contacts: CompanyContact[];
   inProgressStates: InProgressState[];
   messages: Message[];
+  folderId: string | null; // New field to reference a folder
 }
 
 export interface CompanyEmail {
@@ -46,6 +47,14 @@ export type UrgencyLevel = 'low' | 'medium' | 'high' | 'Baixa' | 'Média' | 'Alt
 export interface InProgressState {
   id: string;
   description: string;
+}
+
+// New interface for folders
+export interface Folder {
+  id: string;
+  name: string;
+  color: string;
+  companies?: Company[];
 }
 
 // Interfaces for RPC function responses

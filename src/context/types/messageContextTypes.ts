@@ -1,13 +1,12 @@
-
-import { Company, Message, UrgencyLevel } from '@/types';
+import { Company, Message, UrgencyLevel, Folder } from '@/types';
 
 export interface MessageContextProps {
   companies: Company[];
   activeCompany: Company | null;
   messages: Message[];
-  addMessage: (content: string, fileAttachment?: Message['fileAttachment'], customTimestamp?: number) => Promise<void>;
+  addMessage: (content: string) => Promise<void>;
+  updateMessage: (id: string, updates: Partial<Message>) => Promise<void>;
   deleteMessage: (id: string) => Promise<void>;
-  updateMessage: (id: string, data: Partial<Message>) => Promise<void>;
   createCompany: (name: string) => Promise<void>;
   selectCompany: (id: string) => void;
   updateCompany: (id: string, data: Partial<Company>) => Promise<void>;
@@ -18,8 +17,8 @@ export interface MessageContextProps {
   deleteCompanyPhone: (phoneId: string) => Promise<void>;
   addCompanyContact: (companyId: string, name: string) => Promise<void>;
   deleteCompanyContact: (contactId: string) => Promise<void>;
-  addJobPosition: (title: string) => Promise<void>;
-  deleteJobPosition: (title: string) => Promise<void>;
+  addJobPosition: (jobPosition: string) => Promise<void>;
+  deleteJobPosition: (jobPosition: string) => Promise<void>;
   availableJobPositions: string[];
   availableInProgressStates: string[];
   addInProgressState: (state: string) => Promise<void>;
@@ -27,4 +26,13 @@ export interface MessageContextProps {
   addCompanyInProgressState: (companyId: string, state: string) => Promise<void>;
   deleteCompanyInProgressState: (companyId: string, stateId: string) => Promise<void>;
   isLoading: boolean;
+  
+  // New folder properties
+  folders: Folder[];
+  createFolder: (name: string, color?: string) => Promise<Folder | undefined>;
+  updateFolder: (id: string, updates: Partial<Folder>) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
+  moveCompanyToFolder: (companyId: string, folderId: string | null) => Promise<void>;
+  toggleFolderExpanded: (folderId: string) => void;
+  isFolderExpanded: (folderId: string) => boolean;
 }

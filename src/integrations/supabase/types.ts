@@ -14,6 +14,7 @@ export type Database = {
           contact_person: string | null
           created_at: string
           email: string | null
+          folder_id: string | null
           id: string
           in_progress: string | null
           job_position: string | null
@@ -27,6 +28,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          folder_id?: string | null
           id?: string
           in_progress?: string | null
           job_position?: string | null
@@ -40,6 +42,7 @@ export type Database = {
           contact_person?: string | null
           created_at?: string
           email?: string | null
+          folder_id?: string | null
           id?: string
           in_progress?: string | null
           job_position?: string | null
@@ -49,7 +52,15 @@ export type Database = {
           urgency?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_contacts: {
         Row: {
@@ -202,6 +213,33 @@ export type Database = {
           },
         ]
       }
+      folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       in_progress_states: {
         Row: {
           created_at: string
@@ -335,6 +373,14 @@ export type Database = {
         Args: { company_id_param: string }
         Returns: {
           job_position: string
+        }[]
+      }
+      get_user_folders: {
+        Args: { user_id_param: string }
+        Returns: {
+          id: string
+          name: string
+          color: string
         }[]
       }
     }

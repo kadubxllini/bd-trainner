@@ -1,12 +1,13 @@
 
 import React, { createContext, useState } from 'react';
-import { Company, Message } from '@/types';
+import { Company, Message, Folder } from '@/types';
 import { toast } from 'sonner';
 import { useAuth } from './AuthContext';
 import { useCompanies } from '@/hooks/useCompanies';
 import { useMessagesData } from '@/hooks/useMessages'; // Renamed import to avoid conflict
 import { useJobPositions } from '@/hooks/useJobPositions';
 import { useInProgressStates } from '@/hooks/useInProgressStates';
+import { useFolders } from '@/hooks/useFolders'; // New import for folders
 import { MessageContextProps } from './types/messageContextTypes';
 
 const MessageContext = createContext<MessageContextProps | undefined>(undefined);
@@ -37,7 +38,7 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updateMessage,
     deleteMessage,
     isLoadingMessages
-  } = useMessagesData(activeCompany?.id); // Use the renamed import
+  } = useMessagesData(activeCompany?.id);
   
   const {
     jobPositions: availableJobPositions,
@@ -51,6 +52,18 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteInProgressState,
     isLoadingInProgressStates
   } = useInProgressStates();
+
+  // New folder functionality
+  const {
+    folders,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    moveCompanyToFolder,
+    isLoadingFolders,
+    toggleFolderExpanded,
+    isFolderExpanded
+  } = useFolders(user?.id);
 
   const selectCompany = (id: string) => {
     const company = companies.find(c => c.id === id);
@@ -87,7 +100,15 @@ export const MessageProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteInProgressState,
         addCompanyInProgressState,
         deleteCompanyInProgressState,
-        isLoading: isLoadingCompanies || isLoadingMessages || isLoadingInProgressStates,
+        isLoading: isLoadingCompanies || isLoadingMessages || isLoadingInProgressStates || isLoadingFolders,
+        // New folder properties
+        folders,
+        createFolder,
+        updateFolder,
+        deleteFolder,
+        moveCompanyToFolder,
+        toggleFolderExpanded,
+        isFolderExpanded
       }}
     >
       {children}

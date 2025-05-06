@@ -58,6 +58,7 @@ export const useCompanies = (userId?: string) => {
               id: state.id,
               description: state.description,
             })) || [],
+            folderId: company.folder_id,
             messages: []
           };
         })
@@ -69,9 +70,9 @@ export const useCompanies = (userId?: string) => {
   });
 
   const createCompanyMutation = useMutation({
-    mutationFn: async (name: string) => {
+    mutationFn: async ({ name, folderId }: { name: string, folderId: string | null }) => {
       if (!userId) throw new Error("Usuário não autenticado");
-      return companyService.createCompany(name, userId);
+      return companyService.createCompany(name, userId, folderId);
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
@@ -216,9 +217,9 @@ export const useCompanies = (userId?: string) => {
     }
   });
 
-  const createCompany = async (name: string) => {
+  const createCompany = async (name: string, folderId: string | null = null) => {
     if (!name.trim()) return;
-    await createCompanyMutation.mutateAsync(name);
+    await createCompanyMutation.mutateAsync({ name, folderId });
   };
 
   const updateCompany = async (id: string, data: Partial<Company>) => {
