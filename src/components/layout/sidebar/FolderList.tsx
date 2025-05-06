@@ -4,9 +4,8 @@ import {
   SidebarMenu, 
   SidebarMenuItem, 
   SidebarMenuButton,
-  SidebarMenuAction
 } from '@/components/ui/sidebar';
-import { Folder, FolderOpen, ChevronDown, ChevronRight, Plus, Pencil, Trash } from 'lucide-react';
+import { Folder, FolderOpen, ChevronDown, ChevronRight, Plus, Pencil, Trash, Building, Clock, X } from 'lucide-react';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,7 +15,7 @@ import {
   ContextMenuSubContent,
   ContextMenuSubTrigger,
 } from '@/components/ui/context-menu';
-import { Folder as FolderType, Company } from '@/types';
+import { Folder as FolderType, Company, UrgencyLevel } from '@/types';
 import { Button } from '@/components/ui/button';
 import { NewFolderForm } from './NewFolderForm';
 import { FolderItem } from './FolderItem';
@@ -62,6 +61,11 @@ export function FolderList({
   folders.forEach(folder => {
     companiesByFolder[folder.id] = companies.filter(company => company.folderId === folder.id);
   });
+
+  // Ordenar as empresas sem pasta por ordem alfabética
+  const sortedUnfolderedCompanies = [...unfolderedCompanies].sort((a, b) => 
+    a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+  );
 
   return (
     <div className="space-y-2">
@@ -112,7 +116,7 @@ export function FolderList({
       </div>
 
       <SidebarMenu className="max-h-[calc(100vh-350px)] overflow-y-auto scrollbar-thin">
-        {unfolderedCompanies.map((company) => (
+        {sortedUnfolderedCompanies.map((company) => (
           <ContextMenu key={company.id}>
             <ContextMenuTrigger asChild>
               <SidebarMenuItem>
@@ -209,6 +213,3 @@ const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
       return null;
   }
 };
-
-import { Building, Clock, X } from 'lucide-react';
-import { UrgencyLevel } from '@/types';

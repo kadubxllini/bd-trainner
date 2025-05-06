@@ -57,6 +57,11 @@ export function FolderItem({
     }
   };
 
+  // Ordenar as empresas por ordem alfabética
+  const sortedCompanies = [...companies].sort((a, b) => 
+    a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+  );
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -90,7 +95,7 @@ export function FolderItem({
           
           {isExpanded && (
             <SidebarMenuSub>
-              {companies.map((company) => (
+              {sortedCompanies.map((company) => (
                 <ContextMenu key={company.id}>
                   <ContextMenuTrigger asChild>
                     <SidebarMenuItem>
