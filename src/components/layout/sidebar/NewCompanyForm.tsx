@@ -43,7 +43,7 @@ export const NewCompanyForm = ({ onCreateCompany }: NewCompanyFormProps) => {
                 <SelectValue placeholder="Selecione uma pasta (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem pasta</SelectItem>
+                <SelectItem value="no-folder">Sem pasta</SelectItem>
                 {folders.map(folder => (
                   <SelectItem key={folder.id} value={folder.id}>
                     <div className="flex items-center">

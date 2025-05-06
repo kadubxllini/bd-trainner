@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   Filter, 
@@ -361,3 +360,22 @@ export const FilterMenu = ({
     </>
   );
 };
+
+const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
+  switch(urgency) {
+    case 'Baixa': 
+    case 'low':
+      return <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>;
+    case 'Média':
+    case 'medium':
+      return <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>;
+    case 'Alta':
+    case 'high':
+      return <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>;
+    default: 
+      return null;
+  }
+};
+
+import { Building, Clock, X } from 'lucide-react';
+import { UrgencyLevel } from '@/types';

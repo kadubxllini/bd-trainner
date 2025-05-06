@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Company, UrgencyLevel } from '@/types';
@@ -141,7 +142,7 @@ export function InformationTab({
                 </SelectTrigger>
                 <SelectContent>
                   <ScrollArea className="h-[200px]">
-                    <SelectItem value="none">Nenhum</SelectItem>
+                    <SelectItem value="no-state">Nenhum</SelectItem>
                     {availableInProgressStates.map(state => <SelectItem key={state} value={state}>
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4" />
@@ -164,7 +165,7 @@ export function InformationTab({
                 </SelectTrigger>
                 <SelectContent>
                   <ScrollArea className="h-[200px]">
-                    <SelectItem value="none">Nenhuma</SelectItem>
+                    <SelectItem value="no-selector">Nenhuma</SelectItem>
                     {selectors.map(selector => <SelectItem key={selector} value={selector}>
                         <div className="flex items-center gap-2">
                           <UserCog className="h-4 w-4" />
