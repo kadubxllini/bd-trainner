@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Filter, 
@@ -376,6 +377,3 @@ const getUrgencyIndicator = (urgency?: UrgencyLevel) => {
       return null;
   }
 };
-
-import { Building, Clock, X } from 'lucide-react';
-import { UrgencyLevel } from '@/types';
